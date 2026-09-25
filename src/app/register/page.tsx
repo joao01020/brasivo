@@ -3,16 +3,18 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { registerLocalUser } from "@/lib/auth/localAuth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setSuccess("");
 
     const form = new FormData(event.currentTarget);
     const name = String(form.get("name") ?? "").trim();
@@ -26,14 +28,30 @@ export default function RegisterPage() {
     }
 
     setLoading(true);
-    try {
-      await registerLocalUser(name, email, password);
-      router.push("/");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível criar a conta.");
-    } finally {
+    const supabase = createClient();
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { name },
+        emailRedirectTo: `${window.location.origin}/dashboard`,
+      },
+    });
+
+    if (signUpError) {
+      setError(signUpError.message || "Não foi possível criar a conta.");
       setLoading(false);
+      return;
     }
+
+    if (data.session) {
+      router.replace("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    setSuccess("Conta criada. Confirme seu e-mail para entrar no BRASIVO.");
+    setLoading(false);
   }
 
   return (
@@ -43,7 +61,7 @@ export default function RegisterPage() {
         <div className="auth-message">
           <small>CRIAR CONTA</small>
           <h1>Seu acompanhamento em um só lugar.</h1>
-          <p>Crie uma conta para testar a experiência personalizada do BRASIVO.</p>
+          <p>Crie sua conta para personalizar sua experiência no BRASIVO.</p>
         </div>
         <span className="auth-source">BRASIVO · plataforma independente</span>
       </section>
@@ -52,9 +70,10 @@ export default function RegisterPage() {
         <div className="auth-card">
           <Link className="auth-back" href="/">← Voltar para o início</Link>
           <h2>Cadastrar</h2>
-          <p>Crie uma conta local para testar o fluxo completo.</p>
+          <p>Crie sua conta BRASIVO.</p>
           <form className="auth-form" onSubmit={handleSubmit}>
             {error && <div className="auth-error">{error}</div>}
+            {success && <div className="auth-success">{success}</div>}
             <div className="auth-field">
               <label htmlFor="name">Nome</label>
               <input id="name" name="name" autoComplete="name" minLength={2} required />
@@ -71,7 +90,7 @@ export default function RegisterPage() {
               <label htmlFor="confirmation">Confirmar senha</label>
               <input id="confirmation" name="confirmation" type="password" autoComplete="new-password" minLength={8} required />
             </div>
-            <button className="auth-submit" disabled={loading}>
+            <button className="auth-submit" disabled={loading || Boolean(success)}>
               {loading ? "Criando conta…" : "Criar conta"}
             </button>
           </form>

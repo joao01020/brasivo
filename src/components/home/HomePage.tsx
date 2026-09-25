@@ -5,19 +5,43 @@ import {
   ArrowRight,
   ExternalLink,
   Search,
-  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import BrazilMap from "@/components/map/BrazilMap";
 import type { DashboardData, Representative } from "@/types/camara";
 
 export default function HomePage() {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [selectedState, setSelectedState] = useState("SP");
+  const [selectedState, setSelectedState] = useState("DF");
   const [representatives, setRepresentatives] = useState<Representative[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingRepresentatives, setIsLoadingRepresentatives] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let active = true;
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setIsAuthenticated(Boolean(data.session));
+      setAuthReady(true);
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active) return;
+      setIsAuthenticated(Boolean(session));
+      setAuthReady(true);
+    });
+
+    return () => {
+      active = false;
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     fetch("/api/dashboard")
@@ -75,19 +99,19 @@ export default function HomePage() {
   function handleStateSelection(state: string) {
     setSelectedState(state);
     setSearchQuery("");
+  }
 
-    window.setTimeout(() => {
-      document
-        .getElementById("representatives")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 220);
+  function scrollToRepresentatives() {
+    document
+      .getElementById("representatives")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   const selectedStateCount =
     dashboard?.representativesByState[selectedState] ?? representatives.length;
 
   return (
-    <main className="home-page">
+    <main className="home-page map-first-page">
       <header className="topbar">
         <a className="brand" href="#">
           <span>BR</span>
@@ -112,53 +136,42 @@ export default function HomePage() {
           />
         </form>
 
-        <Link className="ghost-button auth-nav-link" href="/login">
-          Entrar
-        </Link>
+        {authReady && isAuthenticated ? (
+          <Link className="light-button auth-nav-link" href="/dashboard">
+            Meu dashboard
+          </Link>
+        ) : authReady ? (
+          <>
+            <Link className="ghost-button auth-nav-link" href="/login">
+              Entrar
+            </Link>
 
-        <Link className="light-button auth-nav-link" href="/register">
-          Cadastrar
-        </Link>
+            <Link className="light-button auth-nav-link" href="/register">
+              Cadastrar
+            </Link>
+          </>
+        ) : (
+          <span className="auth-nav-placeholder" aria-hidden="true" />
+        )}
       </header>
 
-      <section className="clean-hero" id="map">
-        <div className="ambient ambient-one" />
-        <div className="ambient ambient-two" />
+      <section className="map-first-hero" id="map">
+        <div className="map-first-ambient map-first-ambient-a" />
+        <div className="map-first-ambient map-first-ambient-b" />
 
-        <div className="hero-copy clean-hero-copy">
-          <div className="eyebrow">
-            BRASIL EM TRANSPARÊNCIA <i />
-          </div>
-
+        <div className="map-first-heading">
+          <span>BRASIL EM TRANSPARÊNCIA</span>
           <h1>
-            Acompanhe quem
-            <br />
-            representa <em>você.</em>
+            Explore o Brasil.
+            <em> Estado por estado.</em>
           </h1>
-
-          <p>
-            Explore o mapa e acompanhe representantes a partir de informações
-            públicas e verificáveis.
-          </p>
-
-          <div className="hero-hint">
-            <span className="hint-icon">
-              <ArrowDown size={16} />
-            </span>
-            <span>
-              <b>Comece pelo mapa</b>
-              <small>Selecione uma UF para explorar</small>
-            </span>
-          </div>
-
-          <div className="source-pill">
-            <ShieldCheck size={15} />
-            Dados desta versão: Câmara dos Deputados
-          </div>
+          <p>Selecione uma UF no mapa.</p>
         </div>
 
-        <div className="clean-map-stage">
-          <div className="map-depth-glow" />
+        <div className="map-first-stage">
+          <div className="map-first-depth-ring ring-one" />
+          <div className="map-first-depth-ring ring-two" />
+          <div className="map-first-depth-ring ring-three" />
 
           <BrazilMap
             selectedState={selectedState}
@@ -166,8 +179,8 @@ export default function HomePage() {
             onSelectState={handleStateSelection}
           />
 
-          <div className="floating-state-card">
-            <div className="floating-state-topline">
+          <div className="map-first-state-card">
+            <div className="state-card-kicker">
               <span>UF SELECIONADA</span>
               <i />
             </div>
@@ -180,22 +193,25 @@ export default function HomePage() {
                 : `${selectedStateCount} deputados federais retornados`}
             </p>
 
-            <button
-              onClick={() =>
-                document
-                  .getElementById("representatives")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-            >
+            <button onClick={scrollToRepresentatives}>
               Explorar {selectedState}
               <ArrowRight size={16} />
             </button>
           </div>
         </div>
 
-        <div className="hero-scroll-marker" aria-hidden="true">
-          <span />
-        </div>
+        <button
+          className="map-first-scroll"
+          onClick={scrollToRepresentatives}
+          aria-label="Continuar para representantes"
+        >
+          <ArrowDown size={15} />
+        </button>
+      </section>
+
+      <section className="map-first-transition" aria-hidden="true">
+        <div className="transition-line" />
+        <span>DO TERRITÓRIO À REPRESENTAÇÃO</span>
       </section>
 
       <section className="clean-representatives" id="representatives">
@@ -249,10 +265,9 @@ export default function HomePage() {
 
       <section className="minimal-about" id="about">
         <small>BRASIVO</small>
-        <h2>Informação pública com menos ruído.</h2>
+        <h2>Do mapa à informação pública.</h2>
         <p>
-          Uma interface para explorar dados oficiais de forma simples,
-          verificável e sem pontuação política.
+          Explore representantes a partir de dados públicos e fontes oficiais.
         </p>
       </section>
 

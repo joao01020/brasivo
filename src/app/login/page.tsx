@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
-import { loginLocalUser } from "@/lib/auth/localAuth";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,17 +16,23 @@ export default function LoginPage() {
     setLoading(true);
 
     const form = new FormData(event.currentTarget);
-    try {
-      await loginLocalUser(
-        String(form.get("email") ?? ""),
-        String(form.get("password") ?? ""),
-      );
-      router.push("/");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Não foi possível entrar.");
-    } finally {
+    const email = String(form.get("email") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+
+    const supabase = createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (signInError) {
+      setError("E-mail ou senha inválidos, ou a conta ainda não foi confirmada.");
       setLoading(false);
+      return;
     }
+
+    router.replace("/dashboard");
+    router.refresh();
   }
 
   return (
@@ -36,7 +42,7 @@ export default function LoginPage() {
         <div className="auth-message">
           <small>ACESSO BRASIVO</small>
           <h1>Acompanhe com continuidade.</h1>
-          <p>Entre para acessar a experiência personalizada do protótipo.</p>
+          <p>Entre para acessar seu espaço personalizado no BRASIVO.</p>
         </div>
         <span className="auth-source">BRASIVO · plataforma independente</span>
       </section>
@@ -45,7 +51,7 @@ export default function LoginPage() {
         <div className="auth-card">
           <Link className="auth-back" href="/">← Voltar para o início</Link>
           <h2>Entrar</h2>
-          <p>Use a conta criada neste navegador.</p>
+          <p>Entre na sua conta BRASIVO.</p>
           <form className="auth-form" onSubmit={handleSubmit}>
             {error && <div className="auth-error">{error}</div>}
             <div className="auth-field">
