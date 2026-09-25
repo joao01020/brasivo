@@ -1,4 +1,5 @@
 "use client";
+import { useSearchParams } from "next/navigation";
 
 import {
   ArrowLeft,
@@ -40,6 +41,7 @@ function followLabel(count: number) {
 }
 
 export default function MandateProfile({ id }: { id: string }) {
+  const searchParams = useSearchParams();
   const [mandate, setMandate] = useState<Mandate | null>(null);
   const [activities, setActivities] = useState<MandateActivity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,10 +49,14 @@ export default function MandateProfile({ id }: { id: string }) {
   const [followBusy, setFollowBusy] = useState(false);
   const [signed, setSigned] = useState(false);
   const [followCount, setFollowCount] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"activity" | "expenses">("activity");
+  const [activeTab, setActiveTab] = useState<"activity" | "expenses">(() => searchParams.get("tab") === "expenses" ? "expenses" : "activity");
   const [expenseYear, setExpenseYear] = useState(new Date().getFullYear());
   const [expenses, setExpenses] = useState<MandateExpenseSummary | null>(null);
   const [expensesLoading, setExpensesLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "expenses") setActiveTab("expenses");
+  }, [searchParams]);
 
   useEffect(() => {
     let active = true;
@@ -238,7 +244,20 @@ export default function MandateProfile({ id }: { id: string }) {
                     <section className="expense-section"><div className="expense-section-title"><h3>Por categoria</h3><span>valor líquido</span></div>
                       {expenses.categories.length ? <div className="expense-categories">{expenses.categories.slice(0,8).map((category) => { const pct = expenses.totalNet > 0 ? Math.max(2, (category.value / expenses.totalNet) * 100) : 0; return <div className="expense-category" key={category.name}><div><span>{category.name}</span><strong>{money(category.value)}</strong></div><div className="expense-bar"><i style={{width:`${Math.min(100,pct)}%`}}/></div></div>; })}</div> : <div className="profile-empty">Nenhuma despesa foi retornada para este período.</div>}
                     </section>
-                    <section className="expense-section"><div className="expense-section-title"><h3>Por mês</h3><span>{expenseYear}</span></div><div className="expense-months">{expenses.months.map((month) => { const max = Math.max(...expenses.months.map((item) => Math.abs(item.value)),1); return <div key={month.month}><div className="expense-month-track"><i style={{height:`${Math.max(3, Math.abs(month.value)/max*100)}%`}}/></div><span>{monthNames[month.month-1]}</span><small>{month.value ? money(month.value) : "—"}</small></div>; })}</div></section>
+                    <section className="expense-section"><div className="expense-section-title"><h3>Por mês</h3><span>{expenseYear}</span></div>{(() => {
+                      const max = Math.max(...expenses.months.map((item) => Math.abs(item.value)), 1);
+                      const points = expenses.months.map((month, index) => {
+                        const x = ((index + 0.5) / expenses.months.length) * 100;
+                        const height = month.value ? Math.max(3, Math.abs(month.value) / max * 100) : 0;
+                        return `${x},${100 - height}`;
+                      }).join(" ");
+                      return <div className="expense-month-chart"><div className="expense-month-line" aria-hidden="true"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points={points}/>{expenses.months.map((month,index) => { const x=((index+.5)/expenses.months.length)*100; const height=month.value?Math.max(3,Math.abs(month.value)/max*100):0; return <circle key={month.month} cx={x} cy={100-height} r="1.15"/>; })}</svg></div><div className="expense-months">{expenses.months.map((month,index) => {
+                        const previous = index > 0 ? expenses.months[index - 1].value : 0;
+                        const variation = previous > 0 ? ((month.value - previous) / previous) * 100 : null;
+                        const variationLabel = variation === null ? "Sem base no mês anterior" : `${variation >= 0 ? "+" : ""}${variation.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% vs. ${monthNames[index - 1]}`;
+                        return <div className="expense-month-item" key={month.month} tabIndex={0}><div className="expense-month-tooltip"><strong>{monthNames[month.month-1]} · {money(month.value)}</strong><span>{variationLabel}</span></div><div className="expense-month-track"><i style={{height:`${month.value ? Math.max(3,Math.abs(month.value)/max*100) : 0}%`}}/></div><span>{monthNames[month.month-1]}</span><small>{month.value ? money(month.value) : "—"}</small></div>;
+                      })}</div></div>;
+                    })()}</section>
                     <section className="expense-section"><div className="expense-section-title"><h3>Registros recentes</h3><span>fonte oficial</span></div>
                       {expenses.recent.length ? <div className="expense-list">{expenses.recent.map((expense) => <div className="expense-row" key={expense.id}><div className="expense-row-icon"><FileText size={15}/></div><div className="expense-row-main"><span>{expense.issuedAt ? new Date(`${expense.issuedAt}T12:00:00`).toLocaleDateString("pt-BR") : "Data não informada"}</span><strong>{expense.category}</strong><p>{expense.supplier || "Fornecedor não informado"}</p></div><div className="expense-row-value"><small>VALOR LÍQUIDO</small><strong>{money(expense.netValue)}</strong>{expense.documentUrl && <a href={expense.documentUrl} target="_blank" rel="noreferrer">Comprovante <ExternalLink size={11}/></a>}</div></div>)}</div> : <div className="profile-empty">Nenhum registro recente encontrado.</div>}
                     </section>

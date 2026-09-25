@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import DashboardShell from "@/components/dashboard/DashboardShell";
 import { createClient } from "@/lib/supabase/server";
+import { getRepresentativeExpenses, getRepresentatives } from "@/lib/api/chamber";
 
 export const dynamic = "force-dynamic";
 
@@ -53,13 +54,65 @@ export default async function DashboardPage() {
 
   const actualUnread = notifications.filter((item) => !item.readAt).length;
 
+  // Photos come from the same official Câmara source used by the mandate directory.
+  // A failure here must never prevent the personal dashboard from opening.
+  let representativePhotoById: Record<string, string> = {};
+  try {
+    const representatives = await getRepresentatives();
+    representativePhotoById = Object.fromEntries(
+      representatives
+        .filter((representative) => representative.urlFoto)
+        .map((representative) => [String(representative.id), representative.urlFoto]),
+    );
+  } catch {
+    representativePhotoById = {};
+  }
+
+  // CEAP trend: compare the last 3 complete calendar months with the 3 immediately before them.
+  // The current partial month is intentionally excluded to avoid a misleading comparison.
+  const now = new Date();
+  const monthRefs = Array.from({ length: 6 }, (_, index) => {
+    const date = new Date(now.getFullYear(), now.getMonth() - 1 - index, 1);
+    return { year: date.getFullYear(), month: date.getMonth() + 1 };
+  }).reverse();
+  const neededYears = [...new Set(monthRefs.map((item) => item.year))];
+
+  async function loadExpenseTrend(source: string, externalId: string) {
+    if (source !== "camara") return null;
+    const id = Number(externalId);
+    if (!Number.isInteger(id) || id <= 0) return null;
+    try {
+      const summaries = await Promise.all(neededYears.map((year) => getRepresentativeExpenses(id, year)));
+      if (summaries.some((summary) => summary.status !== "available")) return null;
+      const byYear = new Map(summaries.map((summary) => [summary.year, summary]));
+      const monthlyValues = monthRefs.map(({ year, month }) =>
+        byYear.get(year)?.months.find((item) => item.month === month)?.value ?? 0,
+      );
+      const previous = monthlyValues.slice(0, 3).reduce((sum, value) => sum + value, 0);
+      const current = monthlyValues.slice(3).reduce((sum, value) => sum + value, 0);
+      const percentChange = previous > 0 ? ((current - previous) / previous) * 100 : null;
+      return { current, previous, percentChange, monthlyValues };
+    } catch {
+      return null;
+    }
+  }
+
+  const followedMandates = await Promise.all((followedRows ?? []).map(async (row) => ({
+    ...row,
+    photoUrl:
+      row.representative_source === "camara"
+        ? representativePhotoById[String(row.representative_external_id)] ?? null
+        : null,
+    expenseTrend: await loadExpenseTrend(row.representative_source, String(row.representative_external_id)),
+  })));
+
   return (
     <DashboardShell
       displayName={displayName}
       email={email}
       unreadNotifications={actualUnread}
       notifications={notifications}
-      followedMandates={followedRows ?? []}
+      followedMandates={followedMandates}
     />
   );
 }
