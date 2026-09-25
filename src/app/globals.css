@@ -2252,3 +2252,18 @@ footer > span:first-child {
 
 /* BRASIVO V27 — contexto do acompanhamento e resumo financeiro */
 .mandate-follow-row{display:flex;align-items:center;gap:14px;margin-top:13px}.mandate-follow-row .mandate-follow-count{margin-top:0}.mandate-follow-info{position:relative;width:24px;height:24px;display:inline-grid;place-items:center;flex:0 0 auto;border:1px solid #1c3030;border-radius:50%;color:#76a89a;background:#081215;cursor:help;outline:none;transition:160ms ease}.mandate-follow-info:hover,.mandate-follow-info:focus-visible{border-color:#327a59;color:#a7dfbd;background:#0a1a13}.mandate-follow-tooltip{position:absolute;z-index:30;left:calc(100% + 12px);top:50%;width:min(360px,calc(100vw - 64px));padding:11px 13px;border:1px solid #304039;border-radius:9px;background:#17201d;color:#d8e1de;font-size:11px;line-height:1.55;box-shadow:0 12px 35px rgba(0,0,0,.35);opacity:0;visibility:hidden;transform:translate(4px,-50%);pointer-events:none;transition:140ms ease}.mandate-follow-info:hover .mandate-follow-tooltip,.mandate-follow-info:focus .mandate-follow-tooltip,.mandate-follow-info:focus-within .mandate-follow-tooltip{opacity:1;visibility:visible;transform:translate(0,-50%)}@media(max-width:700px){.mandate-follow-tooltip{left:0;top:calc(100% + 10px);transform:translateY(4px)}.mandate-follow-info:hover .mandate-follow-tooltip,.mandate-follow-info:focus .mandate-follow-tooltip,.mandate-follow-info:focus-within .mandate-follow-tooltip{transform:translateY(0)}}
+
+
+/* Shared authenticated account controls across BRASIVO pages */
+.topbar .account-header-actions { margin-left: 0; }
+.page-header-right { display: flex; align-items: center; gap: 18px; margin-left: auto; }
+.parliamentary-topbar .account-header-actions, .settings-topbar .account-header-actions { flex: 0 0 auto; }
+@media (max-width: 900px) {
+  .page-header-right { gap: 10px; }
+  .parliamentary-topbar .account-header-actions .dashboard-search-trigger,
+  .settings-topbar .account-header-actions .dashboard-search-trigger { display: none; }
+  .account-header-actions .dashboard-profile-copy { display: none; }
+}
+
+/* BRASIVO V30 — acesso direto ao dashboard no header autenticado */
+.account-dashboard-button { text-decoration: none; flex: 0 0 auto; }

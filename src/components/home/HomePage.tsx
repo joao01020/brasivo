@@ -5,6 +5,7 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import BrazilMap from "@/components/map/BrazilMap";
+import AccountHeaderActions from "@/components/account/AccountHeaderActions";
 import type { DashboardData, Representative } from "@/types/chamber";
 
 const STATE_NAMES: Record<string, string> = {
@@ -167,7 +168,7 @@ export default function HomePage() {
           <input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Buscar deputado, partido, UF..." aria-label="Buscar deputado, partido ou unidade federativa" />
         </form>
         {authReady && isAuthenticated ? (
-          <Link className="light-button auth-nav-link" href="/dashboard">Meu dashboard</Link>
+          <AccountHeaderActions />
         ) : authReady ? (
           <><Link className="ghost-button auth-nav-link" href="/login">Entrar</Link><Link className="light-button auth-nav-link" href="/register">Cadastrar</Link></>
         ) : <span className="auth-nav-placeholder" aria-hidden="true" />}

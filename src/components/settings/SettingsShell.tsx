@@ -16,6 +16,7 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import AccountHeaderActions from "@/components/account/AccountHeaderActions";
 
 type SettingsShellProps = {
   initialDisplayName: string;
@@ -185,9 +186,9 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
           <Link className="brand dashboard-brand" href="/">
             <span>BR</span><b>A</b><span>SIVO</span>
           </Link>
-          <Link className="settings-back" href="/dashboard">
+          <div className="page-header-right"><Link className="settings-back" href="/dashboard">
             <ArrowLeft size={15} /> Voltar ao dashboard
-          </Link>
+          </Link><AccountHeaderActions /></div>
         </div>
       </header>
 

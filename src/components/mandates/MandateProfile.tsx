@@ -16,6 +16,7 @@ import {
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import AccountHeaderActions from "@/components/account/AccountHeaderActions";
 import type { MandateActivity, MandateExpenseSummary } from "@/types/chamber";
 
 type Mandate = {
@@ -165,7 +166,7 @@ export default function MandateProfile({ id }: { id: string }) {
     <main className="parliamentary-page">
       <header className="parliamentary-topbar">
         <Link className="brand" href="/"><span>BR</span><b>A</b><span>SIVO</span></Link>
-        <Link className="parliamentary-back" href={`/state/${mandate.state}`}><ArrowLeft size={15} />Voltar para {mandate.state}</Link>
+        <div className="page-header-right"><Link className="parliamentary-back" href={`/state/${mandate.state}`}><ArrowLeft size={15} />Voltar para {mandate.state}</Link><AccountHeaderActions /></div>
       </header>
 
       <section className="parliamentary-profile">
