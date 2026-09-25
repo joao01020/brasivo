@@ -1,8 +1,20 @@
 "use client";
 
-import { ArrowLeft, Check, ChevronRight, KeyRound, LockKeyhole, Save, UserRound } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  KeyRound,
+  LockKeyhole,
+  Save,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type SettingsShellProps = {
@@ -11,6 +23,7 @@ type SettingsShellProps = {
 };
 
 export default function SettingsShell({ initialDisplayName, email }: SettingsShellProps) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -22,6 +35,11 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
+
+  const [dangerOpen, setDangerOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const confirmationText = "EXCLUIR MINHA CONTA";
 
   function showMessage(text: string, type: "success" | "error" = "success") {
     setMessage(text);
@@ -119,6 +137,47 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
     setSavingPassword(false);
   }
 
+  async function deleteAccount() {
+    setMessage(null);
+
+    if (deleteConfirmation !== confirmationText) {
+      showMessage(`Digite exatamente “${confirmationText}” para continuar.`, "error");
+      return;
+    }
+
+    const finalConfirmation = window.confirm(
+      "Esta é a confirmação final. Sua conta será excluída permanentemente e esta ação não poderá ser desfeita. Deseja continuar?",
+    );
+
+    if (!finalConfirmation) return;
+
+    setDeletingAccount(true);
+
+    try {
+      const response = await fetch("/api/account/delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation: deleteConfirmation }),
+      });
+
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        showMessage(result.error || "Não foi possível excluir a conta.", "error");
+        setDeletingAccount(false);
+        return;
+      }
+
+      const client = createClient();
+      await client.auth.signOut().catch(() => undefined);
+      router.replace("/login?accountDeleted=1");
+      router.refresh();
+    } catch {
+      showMessage("Não foi possível excluir a conta. Verifique sua conexão e tente novamente.", "error");
+      setDeletingAccount(false);
+    }
+  }
+
   return (
     <main className="settings-page">
       <header className="settings-topbar">
@@ -149,6 +208,7 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
           <aside className="settings-nav-card">
             <a href="#perfil" className="is-active"><UserRound size={16} /> Perfil <ChevronRight size={14} /></a>
             <a href="#seguranca"><LockKeyhole size={16} /> Segurança <ChevronRight size={14} /></a>
+            <a href="#zona-de-perigo"><AlertTriangle size={16} /> Conta <ChevronRight size={14} /></a>
           </aside>
 
           <div className="settings-panels">
@@ -230,6 +290,59 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
                   {savingPassword ? "Alterando..." : passwordSaved ? "Senha alterada" : "Alterar senha"}
                 </button>
               </form>
+            </section>
+
+            <section className="settings-card settings-danger-card" id="zona-de-perigo">
+              <button
+                type="button"
+                className="settings-danger-toggle"
+                onClick={() => setDangerOpen((value) => !value)}
+                aria-expanded={dangerOpen}
+              >
+                <span className="settings-danger-icon"><AlertTriangle size={18} /></span>
+                <span className="settings-danger-title">
+                  <small>CONTA</small>
+                  <strong>Zona de perigo</strong>
+                  <em>Opções permanentes da sua conta.</em>
+                </span>
+                <ChevronDown className={dangerOpen ? "is-open" : ""} size={17} />
+              </button>
+
+              {dangerOpen && (
+                <div className="settings-danger-content">
+                  <div className="settings-danger-copy">
+                    <div>
+                      <strong>Excluir conta permanentemente</strong>
+                      <p>Esta ação é irreversível. Sua conta e os dados vinculados a ela serão removidos.</p>
+                    </div>
+                    <Trash2 size={18} />
+                  </div>
+
+                  <div className="settings-delete-confirmation">
+                    <label>
+                      <span>Para confirmar, digite <b>{confirmationText}</b></span>
+                      <input
+                        value={deleteConfirmation}
+                        onChange={(event) => setDeleteConfirmation(event.target.value)}
+                        placeholder={confirmationText}
+                        autoComplete="off"
+                        spellCheck={false}
+                        disabled={deletingAccount}
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      className="settings-delete-button"
+                      onClick={deleteAccount}
+                      disabled={deletingAccount || deleteConfirmation !== confirmationText}
+                    >
+                      <Trash2 size={15} />
+                      {deletingAccount ? "Excluindo conta..." : "Excluir minha conta"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
           </div>
         </div>

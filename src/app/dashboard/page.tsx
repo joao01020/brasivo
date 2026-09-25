@@ -14,7 +14,7 @@ export default async function DashboardPage() {
   const userId = claims.sub;
   const email = typeof claims.email === "string" ? claims.email : "";
 
-  const [{ data: profile }, { data: notificationRows }] = await Promise.all([
+  const [{ data: profile }, { data: notificationRows }, { data: followedRows }] = await Promise.all([
     supabase
       .from("profiles")
       .select("display_name")
@@ -26,6 +26,11 @@ export default async function DashboardPage() {
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(12),
+    supabase
+      .from("representative_follows")
+      .select("id,representative_external_id,representative_source,representative_name,representative_office,representative_state,created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
   ]);
 
   const displayName =
@@ -54,6 +59,7 @@ export default async function DashboardPage() {
       email={email}
       unreadNotifications={actualUnread}
       notifications={notifications}
+      followedMandates={followedRows ?? []}
     />
   );
 }

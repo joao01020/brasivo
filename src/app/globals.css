@@ -2141,3 +2141,114 @@ footer > span:first-child {
 .settings-form .settings-input-icon input {
   padding-left: 39px;
 }
+
+/* BRASIVO V14 — DANGER ZONE / ACCOUNT DELETION */
+.settings-danger-card {
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(196, 72, 72, .16);
+  background: linear-gradient(145deg, rgba(18, 12, 14, .72), rgba(8, 11, 14, .97));
+}
+.settings-danger-toggle {
+  width: 100%; min-height: 78px; padding: 18px 22px; display: flex; align-items: center; gap: 12px;
+  border: 0; background: transparent; color: #e7eceb; text-align: left; cursor: pointer;
+}
+.settings-danger-toggle:hover { background: rgba(171, 54, 54, .035); }
+.settings-danger-icon {
+  width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 1px solid rgba(218, 79, 79, .18); border-radius: 10px; color: #d96c6c; background: rgba(100, 26, 31, .16);
+}
+.settings-danger-title { min-width: 0; flex: 1; }
+.settings-danger-title small { display: block; color: #8a5d60; font-size: 7px; letter-spacing: 1.5px; }
+.settings-danger-title strong { display: block; margin-top: 4px; font-size: 12px; font-style: normal; font-weight: 600; }
+.settings-danger-title em { display: block; margin-top: 4px; color: #655d61; font-size: 8px; font-style: normal; }
+.settings-danger-toggle > svg { color: #6c6266; transition: transform 180ms ease; }
+.settings-danger-toggle > svg.is-open { transform: rotate(180deg); }
+.settings-danger-content { padding: 0 22px 22px; border-top: 1px solid rgba(194, 71, 71, .12); }
+.settings-danger-copy { padding: 20px 0 17px; display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.settings-danger-copy strong { color: #e7d9da; font-size: 11px; }
+.settings-danger-copy p { max-width: 560px; margin: 6px 0 0; color: #78686d; font-size: 9px; line-height: 1.65; }
+.settings-danger-copy > svg { flex: 0 0 auto; color: #9d4b51; }
+.settings-delete-confirmation { padding: 16px; border: 1px solid rgba(202, 73, 73, .14); border-radius: 12px; background: rgba(40, 12, 16, .18); }
+.settings-delete-confirmation label > span { display: block; margin-bottom: 8px; color: #9b898d; font-size: 9px; }
+.settings-delete-confirmation label b { color: #d8c1c4; font-weight: 600; }
+.settings-delete-confirmation input {
+  width: 100%; height: 43px; padding: 0 13px; outline: 0; border: 1px solid #392126; border-radius: 10px;
+  background: #0b0b0e; color: #eadfe0; font: inherit; font-size: 10px; letter-spacing: .25px; transition: 150ms ease;
+}
+.settings-delete-confirmation input:focus { border-color: #744048; box-shadow: 0 0 0 3px rgba(188, 62, 70, .05); }
+.settings-delete-button {
+  min-height: 38px; margin-top: 13px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid #73323a; border-radius: 9px; background: #291015; color: #efb7bd; font-size: 10px; cursor: pointer; transition: 150ms ease;
+}
+.settings-delete-button:hover:not(:disabled) { border-color: #a44751; background: #39151c; color: #ffd2d6; }
+.settings-delete-button:disabled { opacity: .38; cursor: not-allowed; }
+@media (max-width: 760px) {
+  .settings-danger-toggle { padding: 16px; }
+  .settings-danger-content { padding: 0 16px 16px; }
+}
+
+/* BRASIVO V15 — PARLAMENTARES */
+.parliamentary-page{min-height:100vh;background:#05090c;color:#edf3f2}.parliamentary-topbar{height:74px;padding:0 max(24px,calc((100vw - 1180px)/2));display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #111d22;background:rgba(5,9,12,.92);backdrop-filter:blur(18px)}.parliamentary-back{display:flex;align-items:center;gap:7px;color:#7f8e93;font-size:10px}.parliamentary-back:hover{color:#e7efed}.state-directory,.parliamentary-profile{width:min(1120px,calc(100% - 48px));margin:0 auto;padding:64px 0 100px}.state-directory-heading>span,.profile-hero-copy>span{color:#45dc89;font-size:8px;letter-spacing:2px}.state-directory-heading h1,.profile-hero-copy h1{margin:9px 0 8px;font-size:clamp(38px,5vw,62px);letter-spacing:-3px;font-weight:500}.state-directory-heading p{max-width:620px;color:#718087;font-size:11px;line-height:1.7}.state-directory-toolbar{margin:34px 0 22px;display:flex;align-items:center;justify-content:space-between;gap:18px}.state-directory-toolbar>div{display:flex;align-items:center;gap:9px;color:#6e7d82;font-size:10px}.state-directory-toolbar>div strong{color:#e9f0ee;font-size:18px}.state-directory-toolbar label{width:min(360px,100%);height:42px;padding:0 12px;display:flex;align-items:center;gap:9px;border:1px solid #17262c;border-radius:10px;background:#071014;color:#617076}.state-directory-toolbar input{width:100%;border:0;outline:0;background:transparent;color:#e6ecea;font:inherit;font-size:10px}.parliamentary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.parliamentary-card{min-height:112px;padding:14px;display:grid;grid-template-columns:72px 1fr auto;align-items:center;gap:14px;border:1px solid #15242a;border-radius:14px;background:linear-gradient(145deg,#091216,#060b0e);transition:180ms ease}.parliamentary-card:hover{transform:translateY(-2px);border-color:#23543b;background:#091713}.parliamentary-card img{width:72px;height:82px;object-fit:cover;object-position:top;border-radius:10px;background:#0c1519}.parliamentary-card small{color:#4acb82;font-size:7px;letter-spacing:1.1px}.parliamentary-card h2{margin:6px 0 5px;font-size:13px;font-weight:600}.parliamentary-card p{margin:0;color:#708087;font-size:9px}.parliamentary-card>svg{color:#526269}.parliamentary-loading,.profile-loading{min-height:50vh;display:flex;align-items:center;justify-content:center;gap:10px;color:#718087;font-size:11px}.official-source-note{margin-top:20px;color:#4e5b60;font-size:8px}.profile-hero{display:grid;grid-template-columns:150px 1fr;gap:30px;align-items:end;padding-bottom:34px;border-bottom:1px solid #142027}.profile-hero>img{width:150px;height:180px;object-fit:cover;object-position:top;border-radius:18px;background:#0a1317}.profile-hero-copy p{margin:0;color:#849197;font-size:11px}.profile-actions{margin-top:22px;display:flex;align-items:center;gap:10px}.follow-button,.profile-actions a{min-height:40px;padding:0 14px;display:inline-flex;align-items:center;gap:8px;border:1px solid #256541;border-radius:9px;background:#0c281a;color:#bce9ce;font-size:10px;cursor:pointer}.follow-button.is-following{background:#122019;border-color:#294b38;color:#8fd8ad}.profile-actions a{border-color:#1c2b31;background:#081115;color:#89979b}.profile-columns{margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px}.profile-main-card,.profile-info-card{padding:22px;border:1px solid #15242a;border-radius:16px;background:linear-gradient(145deg,#091216,#060b0e)}.profile-section-heading{display:flex;align-items:center;justify-content:space-between;padding-bottom:18px;border-bottom:1px solid #142027}.profile-section-heading small,.profile-info-card>small{color:#5b6b70;font-size:7px;letter-spacing:1.5px}.profile-section-heading h2{margin:5px 0 0;font-size:14px}.activity-timeline{padding-top:4px}.activity-item{position:relative;display:grid;grid-template-columns:18px 1fr;gap:10px;padding:17px 0;border-bottom:1px solid #101b20}.activity-item>i{width:8px;height:8px;margin-top:5px;border-radius:50%;background:#31d77b;box-shadow:0 0 12px rgba(49,215,123,.25)}.activity-item span{color:#5c6c71;font-size:8px}.activity-item h3{margin:5px 0;font-size:11px}.activity-item p{margin:0;color:#748288;font-size:9px;line-height:1.6}.activity-item a{display:inline-flex;align-items:center;gap:5px;margin-top:8px;color:#5cc88a;font-size:8px}.profile-info-card dl{margin:16px 0 0}.profile-info-card dl div{padding:13px 0;border-bottom:1px solid #111d22}.profile-info-card dt{color:#59686d;font-size:8px}.profile-info-card dd{margin:5px 0 0;color:#cbd4d2;font-size:10px;overflow-wrap:anywhere}.profile-empty{padding:40px 0;color:#69777c;font-size:10px;text-align:center}.followed-list{padding:8px 0}.followed-row{padding:13px 2px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #142027}.followed-row div{display:grid;gap:3px}.followed-row small{color:#4dbd7d;font-size:7px;letter-spacing:1px}.followed-row strong{font-size:11px}.followed-row span{color:#627177;font-size:8px}.followed-row>svg{color:#56666b}.dashboard-feed{padding-top:8px}.dashboard-feed-item{display:grid;grid-template-columns:10px 1fr;gap:9px;padding:13px 0;border-bottom:1px solid #142027}.dashboard-feed-item>i{width:6px;height:6px;margin-top:4px;border-radius:50%;background:#31d77b}.dashboard-feed-item strong{font-size:10px}.dashboard-feed-item p{margin:4px 0;color:#68777c;font-size:8px;line-height:1.5}.dashboard-feed-item span{color:#4d5c61;font-size:7px}.spin{animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:900px){.parliamentary-grid{grid-template-columns:repeat(2,1fr)}.profile-columns{grid-template-columns:1fr}}@media(max-width:620px){.state-directory,.parliamentary-profile{width:min(100% - 30px,560px);padding-top:38px}.state-directory-toolbar{align-items:stretch;flex-direction:column}.parliamentary-grid{grid-template-columns:1fr}.profile-hero{grid-template-columns:100px 1fr;gap:18px}.profile-hero>img{width:100px;height:128px}.profile-hero-copy h1{font-size:32px;letter-spacing:-1.8px}.profile-actions{align-items:stretch;flex-direction:column}.profile-actions>*{justify-content:center}.parliamentary-topbar{padding:0 15px}}
+
+/* BRASIVO V16 — STATE DIRECTORY MODAL */
+.topbar-nav-button{padding:0;border:0;background:transparent;color:inherit;font:inherit;cursor:pointer}.state-modal-backdrop{position:fixed;inset:0;z-index:2000;padding:34px;display:grid;place-items:center;background:rgba(1,5,7,.78);backdrop-filter:blur(14px);animation:stateModalFade .16s ease}.state-modal{width:min(1050px,100%);max-height:min(780px,calc(100vh - 68px));display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;border:1px solid rgba(90,126,116,.22);border-radius:22px;background:linear-gradient(145deg,rgba(8,17,20,.99),rgba(4,9,12,.995));box-shadow:0 32px 100px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.025);animation:stateModalRise .2s ease}.state-modal-header{padding:24px 26px 20px;display:flex;align-items:flex-start;justify-content:space-between;gap:24px;border-bottom:1px solid #132027}.state-modal-header small{color:#45dc89;font-size:7px;letter-spacing:1.8px}.state-modal-header h2{margin:7px 0 4px;font-size:30px;letter-spacing:-1.4px;font-weight:500}.state-modal-header p{margin:0;color:#65757a;font-size:9px}.state-modal-close{width:36px;height:36px;display:grid;place-items:center;flex:0 0 auto;border:1px solid #1a292f;border-radius:10px;background:#081115;color:#74848a;cursor:pointer;transition:150ms ease}.state-modal-close:hover{border-color:#315044;color:#dbe7e3;background:#0b1716}.state-modal-body{min-height:0;padding:18px 20px;overflow-y:auto;overscroll-behavior:contain}.state-modal-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.state-modal-person{min-height:92px;padding:11px;display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:12px;border:1px solid #142329;border-radius:13px;background:rgba(7,15,18,.82);transition:160ms ease}.state-modal-person:hover{transform:translateY(-1px);border-color:#24533b;background:#091813}.state-modal-person img{width:58px;height:68px;object-fit:cover;object-position:top;border-radius:9px;background:#0b1418}.state-modal-person div{min-width:0;display:grid;gap:4px}.state-modal-person small{color:#3ecf7d;font-size:6px;letter-spacing:1px}.state-modal-person strong{overflow:hidden;color:#e3ebe9;font-size:10px;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.state-modal-person span{color:#627278;font-size:8px}.state-modal-person>svg{color:#4f6267}.state-modal-loading{min-height:280px;display:grid;place-items:center;color:#6d7c81;font-size:10px}.state-modal-footer{min-height:48px;padding:0 25px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-top:1px solid #132027;color:#4d5d62;font-size:8px}.state-modal-footer a{display:inline-flex;align-items:center;gap:5px;color:#65b988}.map-first-page .map-first-transition,.map-first-page .clean-representatives{display:none!important}@keyframes stateModalFade{from{opacity:0}to{opacity:1}}@keyframes stateModalRise{from{opacity:0;transform:translateY(10px) scale(.99)}to{opacity:1;transform:none}}@media(max-width:850px){.state-modal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){.state-modal-backdrop{padding:12px}.state-modal{max-height:calc(100vh - 24px);border-radius:17px}.state-modal-header{padding:19px}.state-modal-body{padding:12px}.state-modal-grid{grid-template-columns:1fr}.state-modal-footer{padding:0 18px}.state-modal-header h2{font-size:25px}}
+
+
+/* BRASIVO V17 — INITIAL RENDER GUARD */
+.brasivo-initial-loader{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;min-height:100dvh;background:#03090b;color:#e9f1ef;overflow:hidden}
+.brasivo-initial-loader::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(0,211,127,.075),rgba(0,211,127,0) 68%);filter:blur(8px);animation:brasivoLoaderGlow 1.8s ease-in-out infinite alternate}
+.brasivo-initial-loader-inner{position:relative;z-index:1;width:min(260px,70vw);display:grid;justify-items:center;gap:15px}
+.brasivo-initial-brand{display:flex;align-items:center;color:#edf5f2;font-size:22px;font-weight:650;letter-spacing:5px}
+.brasivo-initial-brand b{color:#00d37f;font:inherit}
+.brasivo-initial-line{width:100%;height:1px;overflow:hidden;background:rgba(104,130,123,.16)}
+.brasivo-initial-line i{display:block;width:38%;height:100%;background:linear-gradient(90deg,transparent,#00d37f,transparent);animation:brasivoLoaderLine 1.15s ease-in-out infinite}
+.brasivo-initial-loader small{color:#536762;font-size:6px;letter-spacing:2.8px}
+@keyframes brasivoLoaderLine{from{transform:translateX(-120%)}to{transform:translateX(330%)}}
+@keyframes brasivoLoaderGlow{from{opacity:.55;transform:scale(.94)}to{opacity:1;transform:scale(1.04)}}
+@media(prefers-reduced-motion:reduce){.brasivo-initial-loader::before,.brasivo-initial-line i{animation:none}.brasivo-initial-line i{width:100%;opacity:.45}}
+
+
+/* BRASIVO V18 — PHOTO PAINT FIX
+   Mantem a area da foto reservada sem exibir texto alternativo durante o carregamento. */
+.state-modal-person img,
+.parliamentary-card img,
+.profile-hero > img {
+  display: block;
+  color: transparent;
+  font-size: 0;
+}
+
+/* BRASIVO V21 — acompanhamento agregado de mandatos */
+.mandate-follow-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 13px;
+  color: #8fa3a0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.mandate-follow-count svg { color: #6f8d86; flex: 0 0 auto; }
+.mandate-follow-count em { color: #60736f; font-style: normal; }
+.state-modal-follow-count,
+.mandate-card-follow-count {
+  display: flex !important;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  color: #71847f !important;
+  font-size: 10px !important;
+  line-height: 1.2;
+}
+.state-modal-follow-count svg,
+.mandate-card-follow-count svg { flex: 0 0 auto; color: #55716a; }
+
+
+/* BRASIVO V22 — DESPESAS CEAP */
+.mandate-records-card{padding-top:0!important}.mandate-tabs{margin:0 -20px 20px;padding:0 20px;display:flex;gap:4px;border-bottom:1px solid #142027}.mandate-tabs button{height:48px;padding:0 13px;display:flex;align-items:center;gap:7px;border:0;border-bottom:2px solid transparent;background:transparent;color:#65767b;font:inherit;font-size:9px;cursor:pointer}.mandate-tabs button:hover{color:#b8c5c2}.mandate-tabs button.is-active{border-bottom-color:#2ed77b;color:#bde8ce}.expenses-heading select{height:34px;padding:0 28px 0 10px;border:1px solid #1a2a30;border-radius:8px;outline:0;background:#071014;color:#b7c5c1;font:inherit;font-size:9px}.expense-context{margin:15px 0 18px;padding:11px 12px;display:flex;align-items:flex-start;gap:8px;border:1px solid #17262b;border-radius:10px;background:#071014;color:#6f807e;font-size:8px;line-height:1.55}.expense-context svg{margin-top:1px;flex:0 0 auto;color:#5d8575}.expense-loading{min-height:240px;display:flex;align-items:center;justify-content:center;gap:9px;color:#6b7b7f;font-size:9px}.expense-summary-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:10px}.expense-summary-grid>div{padding:18px;border:1px solid #15242a;border-radius:12px;background:#071014}.expense-summary-grid small{display:block;color:#56666b;font-size:7px;letter-spacing:1px}.expense-summary-grid strong{display:block;margin:9px 0 5px;color:#e6efec;font-size:23px;font-weight:500;letter-spacing:-.8px}.expense-summary-grid span{color:#5e6f73;font-size:8px}.expense-section{margin-top:22px;padding-top:19px;border-top:1px solid #142027}.expense-section-title{margin-bottom:13px;display:flex;align-items:center;justify-content:space-between;gap:12px}.expense-section-title h3{margin:0;font-size:11px;font-weight:600}.expense-section-title span{color:#536469;font-size:7px;text-transform:uppercase;letter-spacing:.8px}.expense-categories{display:grid;gap:11px}.expense-category>div:first-child{display:flex;justify-content:space-between;gap:15px;color:#899895;font-size:8px}.expense-category strong{color:#bfcac7;font-weight:500;white-space:nowrap}.expense-bar{height:4px;margin-top:6px;overflow:hidden;border-radius:999px;background:#101b1f}.expense-bar i{display:block;height:100%;border-radius:inherit;background:#2bcf76}.expense-months{height:150px;display:grid;grid-template-columns:repeat(12,1fr);gap:5px;align-items:end}.expense-months>div{height:100%;min-width:0;display:grid;grid-template-rows:1fr auto auto;gap:5px;text-align:center}.expense-month-track{position:relative;overflow:hidden;border-radius:5px;background:#0a1317}.expense-month-track i{position:absolute;left:0;right:0;bottom:0;border-radius:5px;background:linear-gradient(180deg,#32d97d,#17623e)}.expense-months span{color:#6e7d80;font-size:6px}.expense-months small{overflow:hidden;color:#526166;font-size:5.5px;text-overflow:ellipsis;white-space:nowrap}.expense-list{display:grid}.expense-row{padding:13px 0;display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:11px;align-items:center;border-bottom:1px solid #111d22}.expense-row-icon{width:32px;height:32px;display:grid;place-items:center;border:1px solid #17272c;border-radius:9px;background:#081216;color:#557169}.expense-row-main span{color:#526267;font-size:7px}.expense-row-main strong{display:block;margin:4px 0;color:#cbd5d2;font-size:9px}.expense-row-main p{margin:0;color:#647378;font-size:8px}.expense-row-value{text-align:right}.expense-row-value small{display:block;color:#4f5f63;font-size:6px;letter-spacing:.6px}.expense-row-value strong{display:block;margin:4px 0;color:#dce6e3;font-size:10px}.expense-row-value a{display:inline-flex;align-items:center;gap:4px;color:#58b981;font-size:7px}@media(max-width:620px){.expense-summary-grid{grid-template-columns:1fr}.expense-months{gap:2px}.expense-months small{display:none}.expense-row{grid-template-columns:32px minmax(0,1fr)}.expense-row-value{grid-column:2;text-align:left}.mandate-tabs{margin-left:-14px;margin-right:-14px;padding-left:14px}}
+
+
+/* BRASIVO V27 — contexto do acompanhamento e resumo financeiro */
+.mandate-follow-row{display:flex;align-items:center;gap:14px;margin-top:13px}.mandate-follow-row .mandate-follow-count{margin-top:0}.mandate-follow-info{position:relative;width:24px;height:24px;display:inline-grid;place-items:center;flex:0 0 auto;border:1px solid #1c3030;border-radius:50%;color:#76a89a;background:#081215;cursor:help;outline:none;transition:160ms ease}.mandate-follow-info:hover,.mandate-follow-info:focus-visible{border-color:#327a59;color:#a7dfbd;background:#0a1a13}.mandate-follow-tooltip{position:absolute;z-index:30;left:calc(100% + 12px);top:50%;width:min(360px,calc(100vw - 64px));padding:11px 13px;border:1px solid #304039;border-radius:9px;background:#17201d;color:#d8e1de;font-size:11px;line-height:1.55;box-shadow:0 12px 35px rgba(0,0,0,.35);opacity:0;visibility:hidden;transform:translate(4px,-50%);pointer-events:none;transition:140ms ease}.mandate-follow-info:hover .mandate-follow-tooltip,.mandate-follow-info:focus .mandate-follow-tooltip,.mandate-follow-info:focus-within .mandate-follow-tooltip{opacity:1;visibility:visible;transform:translate(0,-50%)}@media(max-width:700px){.mandate-follow-tooltip{left:0;top:calc(100% + 10px);transform:translateY(4px)}.mandate-follow-info:hover .mandate-follow-tooltip,.mandate-follow-info:focus .mandate-follow-tooltip,.mandate-follow-info:focus-within .mandate-follow-tooltip{transform:translateY(0)}}

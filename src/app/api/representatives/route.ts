@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRepresentatives } from "@/lib/api/chamber";
-import type { Representative } from "@/types/camara";
+import type { Representative } from "@/types/chamber";
 
 export const dynamic = "force-dynamic";
 

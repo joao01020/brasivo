@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getRecentVotes, getRepresentatives } from "@/lib/api/chamber";
-import type { DashboardData } from "@/types/camara";
+import type { DashboardData } from "@/types/chamber";
 
 export const dynamic = "force-dynamic";
 

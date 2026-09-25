@@ -1,101 +1,14 @@
 "use client";
-
-import {
-  ArrowRight,
-  Bell,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, Bell, ShieldCheck, UserRound } from "lucide-react";
 import Link from "next/link";
 import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
 
-type DashboardShellProps = {
-  displayName: string;
-  email: string;
-  unreadNotifications: number;
-  notifications: DashboardNotification[];
-};
-
-export default function DashboardShell({
-  displayName,
-  email,
-  unreadNotifications,
-  notifications,
-}: DashboardShellProps) {
-  const firstName = displayName.split(" ")[0] || "você";
-
-  return (
-    <main className="dashboard-page">
-      <DashboardHeader
-        displayName={displayName}
-        email={email}
-        notifications={notifications}
-        unreadNotifications={unreadNotifications}
-      />
-
-      <section className="dashboard-content">
-        <div className="dashboard-welcome">
-          <div>
-            <span className="dashboard-kicker">PAINEL PESSOAL</span>
-            <h1>Olá, {firstName}.</h1>
-            <p>
-              Acompanhe representantes, organize seu território e concentre em um só lugar
-              as atualizações públicas que você decidiu seguir.
-            </p>
-          </div>
-          <div className="dashboard-status">
-            <ShieldCheck size={14} />
-            <span>Dados de fontes oficiais</span>
-          </div>
-        </div>
-
-        <div className="dashboard-layout">
-          <section className="dashboard-main-column">
-            <article className="dashboard-panel dashboard-panel-primary">
-              <div className="panel-heading panel-heading-spread">
-                <div className="panel-heading-group">
-                  <div className="panel-icon"><UserRound size={18} /></div>
-                  <div><small>ACOMPANHAMENTO</small><h2>Seus representantes</h2></div>
-                </div>
-                <Link className="panel-heading-link" href="/#representatives">Explorar <ArrowRight size={14} /></Link>
-              </div>
-
-              <div className="dashboard-empty-state">
-                <div className="empty-orbit"><UserRound size={24} /></div>
-                <strong>Nenhum representante acompanhado</strong>
-                <p>
-                  Escolha representantes para transformar este painel em uma visão pessoal da atividade pública.
-                </p>
-                <Link className="dashboard-primary-link" href="/#map">
-                  Explorar o mapa <ArrowRight size={15} />
-                </Link>
-              </div>
-            </article>
-
-
-          </section>
-
-          <aside className="dashboard-side-column">
-            <article className="dashboard-panel dashboard-activity-panel">
-              <div className="panel-heading panel-heading-spread">
-                <div className="panel-heading-group">
-                  <div className="panel-icon"><Bell size={18} /></div>
-                  <div><small>LINHA DO TEMPO</small><h2>Atividade recente</h2></div>
-                </div>
-                <span className="panel-muted-label">Atualizações verificáveis</span>
-              </div>
-
-              <div className="dashboard-activity-empty">
-                <span className="activity-empty-dot" />
-                <div>
-                  <strong>Nenhuma atividade para exibir</strong>
-                  <p>As atualizações dos representantes acompanhados serão organizadas aqui em ordem cronológica.</p>
-                </div>
-              </div>
-            </article>
-          </aside>
-        </div>
-      </section>
-    </main>
-  );
+type Followed={id:string;representative_external_id:string;representative_source:string;representative_name:string;representative_office:string|null;representative_state:string|null;created_at:string};
+type Props={displayName:string;email:string;unreadNotifications:number;notifications:DashboardNotification[];followedMandates:Followed[]};
+export default function DashboardShell({displayName,email,unreadNotifications,notifications,followedMandates}:Props){
+ const firstName=displayName.split(" ")[0]||"você";
+ return <main className="dashboard-page"><DashboardHeader displayName={displayName} email={email} notifications={notifications} unreadNotifications={unreadNotifications}/><section className="dashboard-content"><div className="dashboard-welcome"><div><span className="dashboard-kicker">PAINEL PESSOAL</span><h1>Olá, {firstName}.</h1><p>Acompanhe mandatos e concentre em um só lugar as atualizações públicas que você decidiu seguir.</p></div><div className="dashboard-status"><ShieldCheck size={14}/><span>Dados de fontes oficiais</span></div></div>
+ <div className="dashboard-layout"><section className="dashboard-main-column"><article className="dashboard-panel dashboard-panel-primary"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><UserRound size={18}/></div><div><small>ACOMPANHAMENTO</small><h2>Mandatos que você acompanha</h2></div></div><Link className="panel-heading-link" href="/#map">Explorar <ArrowRight size={14}/></Link></div>
+ {followedMandates.length?<div className="followed-list">{followedMandates.map(item=><Link href={`/mandate/${item.representative_external_id}`} className="followed-row" key={item.id}><div><small>{item.representative_office||"Mandato"}</small><strong>{item.representative_name}</strong><span>{item.representative_state||"BR"}</span></div><ArrowRight size={15}/></Link>)}</div>:<div className="dashboard-empty-state"><div className="empty-orbit"><UserRound size={24}/></div><strong>Nenhum mandato acompanhado</strong><p>Escolha mandatos para transformar este painel em uma visão pessoal da atividade pública.</p><Link className="dashboard-primary-link" href="/#map">Explorar o mapa <ArrowRight size={15}/></Link></div>}</article></section>
+ <aside className="dashboard-side-column"><article className="dashboard-panel dashboard-activity-panel"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><Bell size={18}/></div><div><small>LINHA DO TEMPO</small><h2>Atividade recente</h2></div></div><span className="panel-muted-label">Atualizações verificáveis</span></div>{notifications.length?<div className="dashboard-feed">{notifications.slice(0,8).map(n=><div className="dashboard-feed-item" key={n.id}><i/><div><strong>{n.title}</strong>{n.message&&<p>{n.message}</p>}<span>{new Date(n.occurredAt||n.createdAt).toLocaleDateString("pt-BR")}</span></div></div>)}</div>:<div className="dashboard-activity-empty"><span className="activity-empty-dot"/><div><strong>Nenhuma atividade para exibir</strong><p>As atualizações dos mandatos acompanhados serão organizadas aqui em ordem cronológica.</p></div></div>}</article></aside></div></section></main>;
 }
