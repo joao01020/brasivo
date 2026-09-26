@@ -1,0 +1,113 @@
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.surface {
+  position: relative;
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(69, 235, 149, 0.24);
+  border-radius: 12px;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(34, 74, 58, 0.25), transparent 58%),
+    linear-gradient(180deg, rgba(8, 27, 20, 0.96), rgba(8, 21, 18, 0.98));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.025),
+    0 0 0 1px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+}
+
+.eye {
+  width: 22px;
+  height: 22px;
+  overflow: visible;
+}
+
+.eyeStroke,
+.pupilStroke {
+  fill: none;
+  stroke: #67f1ab;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.eyeStroke {
+  stroke-width: 3.25;
+}
+
+.pupilStroke {
+  stroke-width: 3.25;
+}
+
+.dotRest,
+.dotMoving {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: #2ef06a;
+  box-shadow:
+    0 0 0 1px rgba(9, 22, 18, 0.98),
+    0 0 7px rgba(46, 240, 106, 0.35);
+  transform: translate(-50%, -50%);
+}
+
+.dotRest {
+  left: 15px;
+  top: 18px;
+}
+
+.motionLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dotMoving {
+  left: 0;
+  top: 0;
+  offset-path: path("M 15 18 C 17 17 19 16 21 16 C 24 16 27 18 29 21 C 27 24 24 26 21 26 C 18 26 15 24 13 21 C 13.7 19.8 14.3 18.8 15 18 Z");
+  offset-distance: 0%;
+  offset-rotate: 0deg;
+  offset-anchor: center;
+  animation: eyeDotOrbit 1.65s linear infinite;
+}
+
+.loading .surface {
+  border-color: rgba(69, 235, 149, 0.34);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(0, 0, 0, 0.14),
+    0 0 24px rgba(46, 240, 106, 0.06);
+}
+
+.loading .eyeStroke,
+.loading .pupilStroke {
+  stroke: #7df5b9;
+}
+
+.ready .surface {
+  border-color: rgba(69, 235, 149, 0.22);
+}
+
+@keyframes eyeDotOrbit {
+  from {
+    offset-distance: 0%;
+  }
+
+  to {
+    offset-distance: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dotMoving {
+    animation: none;
+    offset-distance: 0%;
+  }
+}

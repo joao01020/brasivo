@@ -20,6 +20,8 @@ import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
 import type { MandateExpenseSummary } from "@/types/chamber";
 import MandateActivityPanel from "@/components/mandate/MandateActivityPanel";
+import MandateProjectsPanel from "@/components/mandate/MandateProjectsPanel";
+import MandateSummaryCard from "@/components/mandate/MandateSummaryCard";
 
 type Mandate = {
   id: number;
@@ -49,7 +51,7 @@ export default function MandateProfile({ id }: { id: string }) {
   const [followBusy, setFollowBusy] = useState(false);
   const [signed, setSigned] = useState(false);
   const [followCount, setFollowCount] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"activity" | "expenses">(() => searchParams.get("tab") === "expenses" ? "expenses" : "activity");
+  const [activeTab, setActiveTab] = useState<"activity" | "expenses" | "projects">(() => searchParams.get("tab") === "expenses" ? "expenses" : searchParams.get("tab") === "projects" ? "projects" : "activity");
   const [expenseYear, setExpenseYear] = useState(new Date().getFullYear());
   const [expenses, setExpenses] = useState<MandateExpenseSummary | null>(null);
   const [expensesLoading, setExpensesLoading] = useState(false);
@@ -205,15 +207,20 @@ export default function MandateProfile({ id }: { id: string }) {
           </div>
         </div>
 
+        <MandateSummaryCard mandateId={id} />
+
         <div className="profile-columns">
           <article className="profile-main-card mandate-records-card">
             <div className="mandate-tabs" role="tablist" aria-label="Dados do mandato">
               <button className={activeTab === "activity" ? "is-active" : ""} onClick={() => setActiveTab("activity")}><CalendarDays size={14} />Atividade</button>
               <button className={activeTab === "expenses" ? "is-active" : ""} onClick={() => setActiveTab("expenses")}><Receipt size={14} />Despesas</button>
+              <button className={activeTab === "projects" ? "is-active" : ""} onClick={() => setActiveTab("projects")}><FileText size={14} />Projetos e resultados</button>
             </div>
 
             {activeTab === "activity" ? (
               <MandateActivityPanel mandateId={id} />
+            ) : activeTab === "projects" ? (
+              <MandateProjectsPanel mandateId={id} />
             ) : (
               <div className="mandate-expenses">
                 <div className="profile-section-heading expenses-heading"><div><small>CEAP · DADOS OFICIAIS</small><h2>Despesas do mandato</h2></div>
