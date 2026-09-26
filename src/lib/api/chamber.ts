@@ -6,19 +6,148 @@ import type {
 
 const CHAMBER_API_BASE_URL = "https://dadosabertos.camara.leg.br/api/v2";
 
-async function fetchChamber<T>(path: string): Promise<ChamberApiResponse<T>> {
-  const response = await fetch(`${CHAMBER_API_BASE_URL}${path}`, { headers: { Accept: "application/json" }, next: { revalidate: 900 } });
-  if (!response.ok) throw new Error(`Chamber API returned HTTP ${response.status}`);
-  return response.json();
+// BRASIVO_CHAMBER_RATE_LIMIT_V6_2
+const CHAMBER_MAX_RETRIES = 3;
+const CHAMBER_MIN_INTERVAL_MS = 180;
+const CHAMBER_RETRY_BASE_MS = 700;
+
+const chamberInFlight = new Map<string, Promise<unknown>>();
+let chamberQueue: Promise<void> = Promise.resolve();
+let chamberLastRequestAt = 0;
+
+function chamberSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function fetchChamberSingle<T>(path: string): Promise<T> {
-  const response = await fetch(`${CHAMBER_API_BASE_URL}${path}`, { headers: { Accept: "application/json" }, next: { revalidate: 900 } });
-  if (!response.ok) throw new Error(`Chamber API returned HTTP ${response.status}`);
-  const payload = (await response.json()) as ChamberSingleResponse<T>;
+function chamberRetryDelay(response: Response, attempt: number): number {
+  const retryAfter = response.headers.get("retry-after");
+
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.max(250, seconds * 1000);
+    }
+
+    const parsedDate = Date.parse(retryAfter);
+
+    if (Number.isFinite(parsedDate)) {
+      return Math.max(250, parsedDate - Date.now());
+    }
+  }
+
+  return (
+    CHAMBER_RETRY_BASE_MS * 2 ** attempt +
+    Math.floor(Math.random() * 250)
+  );
+}
+
+async function runChamberRequest<T>(
+  request: () => Promise<T>,
+): Promise<T> {
+  let releaseQueue!: () => void;
+  const previous = chamberQueue;
+
+  chamberQueue = new Promise<void>((resolve) => {
+    releaseQueue = resolve;
+  });
+
+  await previous.catch(() => undefined);
+
+  try {
+    const elapsed = Date.now() - chamberLastRequestAt;
+
+    if (elapsed < CHAMBER_MIN_INTERVAL_MS) {
+      await chamberSleep(CHAMBER_MIN_INTERVAL_MS - elapsed);
+    }
+
+    chamberLastRequestAt = Date.now();
+
+    return await request();
+  } finally {
+    releaseQueue();
+  }
+}
+
+async function fetchChamberJson<T>(path: string): Promise<T> {
+  const existing = chamberInFlight.get(path);
+
+  if (existing) {
+    return existing as Promise<T>;
+  }
+
+  const pending = (async () => {
+    let lastStatus = 0;
+
+    for (
+      let attempt = 0;
+      attempt <= CHAMBER_MAX_RETRIES;
+      attempt += 1
+    ) {
+      const response = await runChamberRequest(() =>
+        fetch(`${CHAMBER_API_BASE_URL}${path}`, {
+          headers: {
+            Accept: "application/json",
+          },
+          next: {
+            revalidate: 900,
+          },
+        }),
+      );
+
+      lastStatus = response.status;
+
+      if (response.ok) {
+        return (await response.json()) as T;
+      }
+
+      const retryable =
+        response.status === 429 ||
+        response.status === 408 ||
+        response.status >= 500;
+
+      if (!retryable || attempt === CHAMBER_MAX_RETRIES) {
+        throw new Error(
+          `Chamber API returned HTTP ${response.status}`,
+        );
+      }
+
+      const waitMs = chamberRetryDelay(response, attempt);
+
+      console.warn(
+        `[BRASIVO Câmara] HTTP ${response.status} em ${path}; tentando novamente em ${waitMs}ms (${attempt + 1}/${CHAMBER_MAX_RETRIES}).`,
+      );
+
+      await chamberSleep(waitMs);
+    }
+
+    throw new Error(
+      `Chamber API returned HTTP ${lastStatus || 429}`,
+    );
+  })();
+
+  chamberInFlight.set(path, pending);
+
+  try {
+    return await pending;
+  } finally {
+    chamberInFlight.delete(path);
+  }
+}
+
+async function fetchChamber<T>(
+  path: string,
+): Promise<ChamberApiResponse<T>> {
+  return fetchChamberJson<ChamberApiResponse<T>>(path);
+}
+async function fetchChamberSingle<T>(
+  path: string,
+): Promise<T> {
+  const payload =
+    await fetchChamberJson<ChamberSingleResponse<T>>(path);
+
   return payload.dados;
 }
-
 export async function getRepresentatives(): Promise<ChamberRepresentative[]> {
   const firstPage = await fetchChamber<ChamberRepresentative>("/deputados?ordem=ASC&ordenarPor=nome&itens=100&pagina=1");
   const representatives = [...firstPage.dados];

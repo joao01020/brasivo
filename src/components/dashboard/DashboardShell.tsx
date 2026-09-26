@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
 import { subscribeToMandateNotifications } from "@/lib/notifications/realtime";
+import DashboardUserAvatar from "@/components/account/DashboardUserAvatar";
 
 type ExpenseTrend={current:number;previous:number;percentChange:number|null;monthlyValues:number[]};
 type Followed={id:string;representative_external_id:string;representative_source:string;representative_name:string;representative_office:string|null;representative_state:string|null;created_at:string;photoUrl:string|null;expenseTrend:ExpenseTrend|null};
@@ -25,6 +26,7 @@ export default function DashboardShell(props:Props={}){
  const router=useRouter();
  const [loading,setLoading]=useState(true);
  const [displayName,setDisplayName]=useState(props.displayName??"");
+  const firstName = displayName.trim().split(/\s+/)[0] || "você";
  const [email,setEmail]=useState(props.email??"");
  const [notifications,setNotifications]=useState<DashboardNotification[]>(props.notifications??[]);
  const [unreadNotifications,setUnreadNotifications]=useState(props.unreadNotifications??0);
@@ -86,7 +88,8 @@ export default function DashboardShell(props:Props={}){
    const now=new Date();
    const monthRefs=Array.from({length:6},(_,index)=>{const date=new Date(now.getFullYear(),now.getMonth()-1-index,1);return {year:date.getFullYear(),month:date.getMonth()+1}}).reverse();
    const years=[...new Set(monthRefs.map(item=>item.year))];
-   await Promise.all(base.map(async item=>{
+   // BRASIVO_DASHBOARD_EXPENSE_THROTTLE_V6_2
+   for (const item of base) {
     if(item.representative_source!=="camara")return;
     try{
      const responses=await Promise.all(years.map(year=>fetch(`/api/mandates/${item.representative_external_id}/expenses?year=${year}`)));
@@ -100,15 +103,32 @@ export default function DashboardShell(props:Props={}){
      const expenseTrend={current,previous,percentChange:previous>0?((current-previous)/previous)*100:null,monthlyValues};
      if(active)setFollowedMandates(currentItems=>currentItems.map(currentItem=>currentItem.id===item.id?{...currentItem,expenseTrend}:currentItem));
     }catch{}
-   }));
+   }
   })();
   return()=>{active=false};
  },[props.displayName,router]);
 
- if(loading)return <main className="dashboard-page"><section className="dashboard-content"><div className="dashboard-welcome"><div><span className="dashboard-kicker">PAINEL PESSOAL</span><h1>Carregando seu painel…</h1><p>Preparando seus acompanhamentos.</p></div></div></section></main>;
- const firstName=displayName.split(" ")[0]||"você";
- return <main className="dashboard-page"><DashboardHeader displayName={displayName} email={email} notifications={notifications} unreadNotifications={unreadNotifications}/><section className="dashboard-content"><div className="dashboard-welcome"><div><span className="dashboard-kicker">PAINEL PESSOAL</span><h1>Olá, {firstName}.</h1><p>Acompanhe mandatos e concentre em um só lugar as atualizações públicas que você decidiu seguir.</p></div><div className="dashboard-status"><ShieldCheck size={14}/><span>Dados de fontes oficiais</span></div></div>
- <div className="dashboard-layout"><section className="dashboard-main-column"><article className="dashboard-panel dashboard-panel-primary"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><UserRound size={18}/></div><div><small>ACOMPANHAMENTO</small><h2>Mandatos que você acompanha</h2></div></div><Link className="panel-heading-link" href="/#map">Explorar <ArrowRight size={14}/></Link></div>
+ return <main className="dashboard-page"><DashboardHeader displayName={displayName} email={email} notifications={notifications} unreadNotifications={unreadNotifications}/><section className="dashboard-content">
+    <div className="dashboard-welcome">
+      <div className="dashboard-welcome-user">
+        <DashboardUserAvatar />
+
+        <div>
+          <span className="dashboard-kicker">PAINEL PESSOAL</span>
+          <h1>Olá, {firstName}.</h1>
+          <p>
+            Acompanhe mandatos e concentre em um só lugar as atualizações públicas que você decidiu seguir.
+          </p>
+        </div>
+      </div>
+
+      <div className="dashboard-status">
+        <ShieldCheck size={14} />
+        <span>Dados de fontes oficiais</span>
+      </div>
+    </div>
+
+    <div className="dashboard-layout"><section className="dashboard-main-column"><article className="dashboard-panel dashboard-panel-primary"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><UserRound size={18}/></div><div><small>ACOMPANHAMENTO</small><h2>Mandatos que você acompanha</h2></div></div><Link className="panel-heading-link" href="/#map">Explorar <ArrowRight size={14}/></Link></div>
  {followedMandates.length?<div className="followed-list">{followedMandates.map(item=><div className="followed-row" key={item.id} role="link" tabIndex={0} onClick={()=>router.push(`/mandate/${item.representative_external_id}`)} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();router.push(`/mandate/${item.representative_external_id}`)}}}><div className="followed-row-content">{item.photoUrl?<img className="followed-row-photo" src={item.photoUrl} alt="" aria-hidden="true" loading="lazy"/>:<span className="followed-row-photo followed-row-photo-placeholder" aria-hidden="true"><UserRound size={14}/></span>}<div className="followed-row-copy"><small>{item.representative_office||"Mandato"}</small><strong>{item.representative_name}</strong><span>{item.representative_state||"BR"}</span></div></div><Trend trend={item.expenseTrend} onOpen={()=>router.push(`/mandate/${item.representative_external_id}?tab=expenses`)}/><ArrowRight className="followed-row-arrow" size={15}/></div>)}</div>:<div className="dashboard-empty-state"><div className="empty-orbit"><UserRound size={24}/></div><strong>Nenhum mandato acompanhado</strong><p>Escolha mandatos para transformar este painel em uma visão pessoal da atividade pública.</p><Link className="dashboard-primary-link" href="/#map">Explorar o mapa <ArrowRight size={15}/></Link></div>}</article></section>
  <aside className="dashboard-side-column"><article className="dashboard-panel dashboard-activity-panel"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><Bell size={18}/></div><div><small>LINHA DO TEMPO</small><h2>Atividade recente</h2></div></div><span className="panel-muted-label">Atualizações verificáveis</span></div>{notifications.length?<div className="dashboard-feed">{notifications.slice(0,8).map(n=><div className="dashboard-feed-item" key={n.id}><i/><div><strong>{n.title}</strong>{n.message&&<p>{n.message}</p>}<span>{new Date(n.occurredAt||n.createdAt).toLocaleDateString("pt-BR")}</span></div></div>)}</div>:<div className="dashboard-activity-empty"><span className="activity-empty-dot"/><div><strong>Nenhuma atividade para exibir</strong><p>As atualizações dos mandatos acompanhados serão organizadas aqui em ordem cronológica.</p></div></div>}</article></aside></div></section></main>;
 }

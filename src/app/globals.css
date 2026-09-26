@@ -2286,3 +2286,586 @@ button.followed-expense-trend{font:inherit;text-align:left;color:inherit;backgro
 /* V35 — CEAP monthly chart: trend line + month-over-month hover detail */
 .expense-month-chart{position:relative}.expense-month-line{position:absolute;z-index:3;top:0;left:0;right:0;height:118px;pointer-events:none}.expense-month-line svg{width:100%;height:100%;overflow:visible}.expense-month-line polyline{fill:none;stroke:#8fa09b;stroke-width:.65;vector-effect:non-scaling-stroke;opacity:.7}.expense-month-line circle{fill:#071014;stroke:#9fb0aa;stroke-width:.65;vector-effect:non-scaling-stroke}.expense-month-item{position:relative;z-index:2;border-radius:6px;outline:0;transition:background .16s ease}.expense-month-item:hover,.expense-month-item:focus-visible{background:rgba(46,215,123,.055)}.expense-month-item:hover .expense-month-track,.expense-month-item:focus-visible .expense-month-track{box-shadow:inset 0 0 0 1px rgba(46,215,123,.34);background:#0d1a1e}.expense-month-item:hover .expense-month-track i,.expense-month-item:focus-visible .expense-month-track i{filter:brightness(1.18)}.expense-month-tooltip{position:absolute;z-index:8;left:50%;bottom:calc(100% - 8px);width:max-content;max-width:170px;padding:8px 10px;transform:translate(-50%,-6px);border:1px solid #203239;border-radius:8px;background:#081216;box-shadow:0 10px 24px rgba(0,0,0,.3);opacity:0;visibility:hidden;pointer-events:none;text-align:left;transition:opacity .14s ease,transform .14s ease,visibility .14s}.expense-month-tooltip strong{display:block;color:#dbe6e2;font-size:7.5px;font-weight:600;white-space:nowrap}.expense-month-tooltip span{display:block;margin-top:4px;color:#7f918d;font-size:7px;white-space:nowrap}.expense-month-item:hover .expense-month-tooltip,.expense-month-item:focus-visible .expense-month-tooltip{opacity:1;visibility:visible;transform:translate(-50%,-10px)}
 @media(max-width:620px){.expense-month-line{height:118px}.expense-month-tooltip{display:none}}
+
+
+/* ============================================================
+   BRASIVO — USER AVATAR V1
+   ============================================================ */
+.brasivo-user-avatar{
+  color:#b7c4c1;
+  background:radial-gradient(circle at 50% 35%,rgba(33,231,124,.11),transparent 46%),#0c161a;
+  border:1px solid #30443f;
+  border-radius:50%;
+  flex:none;
+  place-items:center;
+  display:grid;
+  overflow:hidden;
+  box-shadow:inset 0 0 0 3px #071014;
+}
+.brasivo-user-avatar-image{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center;
+}
+.dashboard-profile-avatar.brasivo-user-avatar{
+  width:35px!important;
+  height:35px!important;
+}
+.dashboard-welcome-user{
+  display:flex;
+  align-items:flex-start;
+  gap:14px;
+}
+.dashboard-welcome-avatar-link{
+  flex:none;
+  margin-top:22px;
+  text-decoration:none;
+  border-radius:50%;
+  transition:transform .16s ease,filter .16s ease;
+}
+.dashboard-welcome-avatar-link:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.12);
+}
+.settings-avatar-editor{
+  display:flex;
+  align-items:center;
+  gap:18px;
+  padding:0 0 20px;
+  margin:0 0 20px;
+  border-bottom:1px solid #142329;
+}
+.settings-avatar-preview{
+  width:72px;
+  height:72px;
+  position:relative;
+  flex:none;
+}
+.settings-avatar-loading{
+  width:72px;
+  height:72px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  color:#6d817b;
+  background:#091318;
+  border:1px solid #21332f;
+}
+.settings-avatar-camera{
+  cursor:pointer;
+  width:27px;
+  height:27px;
+  border-radius:50%;
+  border:1px solid #285443;
+  background:#0a2017;
+  color:#63d899;
+  display:grid;
+  place-items:center;
+  position:absolute;
+  right:-2px;
+  bottom:-2px;
+  box-shadow:0 5px 14px rgba(0,0,0,.35);
+}
+.settings-avatar-camera:hover{
+  background:#0d2a1d;
+  color:#91efb7;
+}
+.settings-avatar-copy{
+  min-width:0;
+  display:grid;
+  gap:6px;
+}
+.settings-avatar-copy>strong{
+  color:#e6edeb;
+  font-size:12px;
+}
+.settings-avatar-copy>p{
+  color:#68787c;
+  margin:0;
+  font-size:9px;
+  line-height:1.55;
+}
+.settings-avatar-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:4px;
+}
+.settings-avatar-button,
+.settings-avatar-remove{
+  cursor:pointer;
+  border-radius:8px;
+  min-height:31px;
+  padding:0 11px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:9px;
+  transition:all .15s ease;
+}
+.settings-avatar-button{
+  color:#a5e5bf;
+  background:#0a2117;
+  border:1px solid #276443;
+}
+.settings-avatar-button:hover{
+  background:#0d2c1d;
+  border-color:#37875b;
+}
+.settings-avatar-remove{
+  color:#a9b5b2;
+  background:#0a1115;
+  border:1px solid #263237;
+}
+.settings-avatar-remove:hover{
+  color:#e6b5b5;
+  border-color:#674040;
+}
+.settings-avatar-button:disabled,
+.settings-avatar-remove:disabled,
+.settings-avatar-camera:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.settings-avatar-status{
+  color:#5bc889;
+  font-size:8px;
+}
+.settings-avatar-status.is-error{
+  color:#d98d8d;
+}
+.is-spinning{
+  animation:brasivo-avatar-spin .8s linear infinite;
+}
+@keyframes brasivo-avatar-spin{
+  to{transform:rotate(360deg)}
+}
+@media(max-width:640px){
+  .settings-avatar-editor{align-items:flex-start}
+  .dashboard-welcome-avatar-link{margin-top:18px}
+}
+
+
+/* ============================================================
+   FIX — alinhamento do avatar no menu da conta
+   ============================================================ */
+
+.profile-popover-user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.profile-popover-user .profile-popover-avatar,
+.profile-popover-user .brasivo-user-avatar{
+  width:36px !important;
+  height:36px !important;
+  flex:0 0 36px;
+}
+
+.profile-popover-user > div{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:2px;
+  line-height:1.15;
+}
+
+.profile-popover-user strong{
+  margin:0;
+  line-height:1.15;
+}
+
+.profile-popover-user span{
+  margin:0;
+  line-height:1.2;
+}
+
+
+/* ============================================================
+   FIX DEFINITIVO — alinhamento do menu da conta
+   ============================================================ */
+
+.profile-popover{
+  padding:10px 0 !important;
+}
+
+.profile-popover-user{
+  box-sizing:border-box !important;
+  width:100% !important;
+  min-height:58px !important;
+
+  display:grid !important;
+  grid-template-columns:36px minmax(0,1fr) !important;
+  align-items:center !important;
+  column-gap:11px !important;
+
+  padding:8px 14px 10px !important;
+  margin:0 !important;
+}
+
+.profile-popover-user .profile-popover-avatar,
+.profile-popover-user .brasivo-user-avatar{
+  width:36px !important;
+  height:36px !important;
+  min-width:36px !important;
+  max-width:36px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  align-self:center !important;
+  justify-self:center !important;
+}
+
+.profile-popover-user > div{
+  min-width:0 !important;
+
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:flex-start !important;
+
+  gap:3px !important;
+  margin:0 !important;
+  padding:0 !important;
+}
+
+.profile-popover-user > div > strong{
+  display:block !important;
+  margin:0 !important;
+  padding:0 !important;
+
+  line-height:1.15 !important;
+  font-size:11px !important;
+}
+
+.profile-popover-user > div > span{
+  display:block !important;
+  margin:0 !important;
+  padding:0 !important;
+
+  line-height:1.2 !important;
+  font-size:8px !important;
+}
+
+.profile-popover-settings,
+.profile-popover > button{
+  box-sizing:border-box !important;
+  width:100% !important;
+
+  min-height:42px !important;
+  padding-left:15px !important;
+  padding-right:15px !important;
+
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+}
+
+.profile-popover-separator{
+  margin:4px 14px !important;
+}
+
+
+/* ============================================================
+   FIX — alinhamento do usuário no HEADER
+   ============================================================ */
+
+.dashboard-profile-button{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+
+  gap:9px !important;
+  height:43px !important;
+
+  padding:3px 10px 3px 4px !important;
+  margin:0 !important;
+}
+
+.dashboard-profile-button .dashboard-profile-avatar,
+.dashboard-profile-button .brasivo-user-avatar{
+  width:35px !important;
+  height:35px !important;
+  min-width:35px !important;
+  flex:0 0 35px !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  align-self:center !important;
+}
+
+.dashboard-profile-copy{
+  display:flex !important;
+  flex-direction:column !important;
+  justify-content:center !important;
+  align-items:flex-start !important;
+
+  gap:2px !important;
+
+  min-width:0 !important;
+  margin:0 !important;
+  padding:0 !important;
+
+  line-height:1 !important;
+}
+
+.dashboard-profile-copy strong{
+  display:block !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  font-size:10px !important;
+  line-height:12px !important;
+  font-weight:600 !important;
+}
+
+.dashboard-profile-copy small{
+  display:block !important;
+
+  margin:0 !important;
+  padding:0 !important;
+
+  font-size:7px !important;
+  line-height:10px !important;
+  color:#617078 !important;
+}
+
+/* evita regras antigas empurrando nome/e-mail */
+.dashboard-profile-copy > *{
+  position:static !important;
+  transform:none !important;
+}
+
+
+
+/* ============================================================
+   BRASIVO — AVATAR SYNC V2
+   Uma única geometria para header, popover e dashboard.
+   ============================================================ */
+
+.brasivo-user-avatar{
+  position:relative!important;
+  box-sizing:border-box!important;
+  display:grid!important;
+  place-items:center!important;
+  flex:none!important;
+  overflow:hidden!important;
+  margin:0!important;
+  padding:0!important;
+  border:1px solid #30443f!important;
+  border-radius:50%!important;
+  color:#aebdb9!important;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(33,231,124,.10),transparent 48%),
+    #0c161a!important;
+  box-shadow:inset 0 0 0 2px #071014!important;
+  line-height:1!important;
+}
+
+.brasivo-user-avatar-image{
+  position:absolute!important;
+  inset:0!important;
+  z-index:2!important;
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-width:100%!important;
+  min-height:100%!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:50%!important;
+  object-fit:cover!important;
+  object-position:center!important;
+}
+
+.brasivo-user-avatar-fallback{
+  position:relative!important;
+  z-index:1!important;
+  display:block!important;
+  color:#aebdb9!important;
+}
+
+.brasivo-user-avatar-error-fallback{
+  position:relative!important;
+  z-index:0!important;
+  display:block!important;
+  color:#aebdb9!important;
+}
+
+.brasivo-user-avatar:not([data-image-failed]) .brasivo-user-avatar-error-fallback{
+  visibility:hidden!important;
+}
+
+.brasivo-user-avatar[data-image-failed="true"] .brasivo-user-avatar-error-fallback{
+  visibility:visible!important;
+  z-index:3!important;
+}
+
+.dashboard-profile-button{
+  display:flex!important;
+  align-items:center!important;
+  gap:9px!important;
+}
+
+.dashboard-profile-button .brasivo-account-header-avatar{
+  width:35px!important;
+  height:35px!important;
+  min-width:35px!important;
+  min-height:35px!important;
+  flex:0 0 35px!important;
+}
+
+.dashboard-profile-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  gap:2px!important;
+  min-width:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.dashboard-profile-copy strong,
+.dashboard-profile-copy small{
+  display:block!important;
+  margin:0!important;
+  padding:0!important;
+  white-space:nowrap!important;
+  line-height:1.2!important;
+}
+
+.brasivo-account-menu-anchor{
+  position:relative!important;
+}
+
+.brasivo-account-menu-backdrop{
+  position:fixed!important;
+  inset:0!important;
+  z-index:39!important;
+  width:auto!important;
+  height:auto!important;
+  min-height:0!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+
+.brasivo-account-popover{
+  z-index:40!important;
+}
+
+.brasivo-account-popover-user{
+  box-sizing:border-box!important;
+  display:grid!important;
+  grid-template-columns:38px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:10px!important;
+  width:100%!important;
+  min-height:58px!important;
+  margin:0!important;
+  padding:8px 14px 10px!important;
+}
+
+.brasivo-account-popover-avatar{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+  flex:0 0 38px!important;
+  justify-self:start!important;
+}
+
+.brasivo-account-popover-copy{
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:flex-start!important;
+  min-width:0!important;
+  gap:3px!important;
+  margin:0!important;
+  padding:0!important;
+}
+
+.brasivo-account-popover-copy strong{
+  display:block!important;
+  max-width:155px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  color:#e4ece9!important;
+  font-size:11px!important;
+  font-weight:650!important;
+  line-height:1.2!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.brasivo-account-popover-copy span{
+  display:block!important;
+  max-width:155px!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+  color:#65767a!important;
+  font-size:7px!important;
+  line-height:1.25!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+
+.brasivo-account-popover .profile-popover-settings,
+.brasivo-account-popover > button:not(.brasivo-account-menu-backdrop){
+  box-sizing:border-box!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  width:100%!important;
+}
+
+.dashboard-welcome-user{
+  display:flex!important;
+  align-items:flex-start!important;
+  gap:14px!important;
+}
+
+.dashboard-welcome-avatar-link{
+  display:block!important;
+  flex:none!important;
+  margin-top:22px!important;
+  border-radius:50%!important;
+  text-decoration:none!important;
+}
+
+.brasivo-dashboard-welcome-avatar{
+  width:38px!important;
+  height:38px!important;
+  min-width:38px!important;
+  min-height:38px!important;
+}
+
+@media(max-width:900px){
+  .dashboard-profile-copy{
+    display:none!important;
+  }
+}
+
+@media(max-width:640px){
+  .dashboard-welcome-user{
+    gap:10px!important;
+  }
+
+  .dashboard-welcome-avatar-link{
+    margin-top:18px!important;
+  }
+}
+

@@ -70,11 +70,129 @@ function buildUrl(
   return url.toString();
 }
 
-async function getJson<T>(urlOrPath: string): Promise<Envelope<T>> {
-  const url = urlOrPath.startsWith("http") ? urlOrPath : `${API}${urlOrPath}`;
-  const response = await fetch(url, fetchOptions);
-  if (!response.ok) throw new Error(`Câmara API ${response.status}: ${url}`);
-  return response.json() as Promise<Envelope<T>>;
+// BRASIVO_PROJECTS_RATE_LIMIT_V6_3
+const PROJECTS_MAX_RETRIES = 4;
+const PROJECTS_BASE_DELAY_MS = 800;
+const PROJECTS_MIN_INTERVAL_MS = 220;
+
+const projectsInFlight = new Map<string, Promise<Envelope<unknown>>>();
+let projectsQueue: Promise<void> = Promise.resolve();
+let projectsLastRequestAt = 0;
+
+function projectsSleep(ms: number) {
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
+}
+
+function projectsRetryDelay(response: Response, attempt: number) {
+  const retryAfter = response.headers.get("retry-after");
+
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return Math.max(300, seconds * 1000);
+    }
+
+    const parsed = Date.parse(retryAfter);
+    if (Number.isFinite(parsed)) {
+      return Math.max(300, parsed - Date.now());
+    }
+  }
+
+  return (
+    PROJECTS_BASE_DELAY_MS * 2 ** attempt +
+    Math.floor(Math.random() * 300)
+  );
+}
+
+async function runProjectsRequest<T>(
+  request: () => Promise<T>,
+): Promise<T> {
+  let release!: () => void;
+  const previous = projectsQueue;
+
+  projectsQueue = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+
+  await previous.catch(() => undefined);
+
+  try {
+    const elapsed = Date.now() - projectsLastRequestAt;
+
+    if (elapsed < PROJECTS_MIN_INTERVAL_MS) {
+      await projectsSleep(PROJECTS_MIN_INTERVAL_MS - elapsed);
+    }
+
+    projectsLastRequestAt = Date.now();
+    return await request();
+  } finally {
+    release();
+  }
+}
+
+async function getJson<T>(
+  urlOrPath: string,
+): Promise<Envelope<T>> {
+  const url = urlOrPath.startsWith("http")
+    ? urlOrPath
+    : `${API}${urlOrPath}`;
+
+  const existing = projectsInFlight.get(url);
+  if (existing) return existing as Promise<Envelope<T>>;
+
+  const pending = (async () => {
+    let lastStatus = 0;
+
+    for (
+      let attempt = 0;
+      attempt <= PROJECTS_MAX_RETRIES;
+      attempt += 1
+    ) {
+      const response = await runProjectsRequest(() =>
+        fetch(url, fetchOptions),
+      );
+
+      lastStatus = response.status;
+
+      if (response.ok) {
+        return (await response.json()) as Envelope<T>;
+      }
+
+      const retryable =
+        response.status === 429 ||
+        response.status === 408 ||
+        response.status >= 500;
+
+      if (!retryable || attempt === PROJECTS_MAX_RETRIES) {
+        throw new Error(
+          `Câmara API ${response.status}: ${url}`,
+        );
+      }
+
+      const waitMs = projectsRetryDelay(response, attempt);
+
+      console.warn(
+        `[BRASIVO projetos] HTTP ${response.status}; nova tentativa em ${waitMs}ms (${attempt + 1}/${PROJECTS_MAX_RETRIES}).`,
+      );
+
+      await projectsSleep(waitMs);
+    }
+
+    throw new Error(
+      `Câmara API ${lastStatus || 429}: ${url}`,
+    );
+  })();
+
+  projectsInFlight.set(
+    url,
+    pending as Promise<Envelope<unknown>>,
+  );
+
+  try {
+    return await pending;
+  } finally {
+    projectsInFlight.delete(url);
+  }
 }
 
 async function getPaged<T>(
@@ -224,11 +342,16 @@ export async function getMandateProjectsSummary(
 
     listed = byYear.flat();
   } catch (error) {
-    throw new Error(
-      `Não foi possível consultar os projetos na Câmara: ${
-        error instanceof Error ? error.message : "falha de consulta"
-      }`,
+    const message =
+      error instanceof Error ? error.message : "falha de consulta";
+
+    console.error("[BRASIVO projetos] consulta principal", error);
+
+    warnings.push(
+      `Consulta de projetos temporariamente indisponível: ${message}`,
     );
+
+    listed = [];
   }
 
   const unique = new Map<number, PropositionListItem>();
@@ -242,7 +365,7 @@ export async function getMandateProjectsSummary(
   // Detalhamos todos os projetos normativos encontrados nos quatro anos.
   // Isso mantém o resumo do mandato completo, sem truncar silenciosamente
   // projetos mais antigos da legislatura.
-  const detailed = await withConcurrency(candidates, 8, async (item) => {
+  const detailed = await withConcurrency(candidates, 3, async (item) => {
     try {
       const payload = await getJson<PropositionDetail>(`/proposicoes/${item.id}`);
       return payload.dados ?? item;

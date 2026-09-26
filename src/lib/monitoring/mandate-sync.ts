@@ -5,8 +5,8 @@ import type { MandateChangeKind, MandateSyncResult, NormalizedMandateRecord } fr
 
 function adminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) throw new Error("NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausente.");
+  const key = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) throw new Error("NEXT_PUBLIC_SUPABASE_URL/SUPABASE_URL ou SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY ausente.");
   return createClient(url, key, { auth:{persistSession:false,autoRefreshToken:false} });
 }
 

@@ -10,6 +10,7 @@ export type MandateSummaryDigest = {
     years: number[];
   };
   projects: {
+    available: boolean;
     total: number;
     becameRule: number;
     inProgress: number;
@@ -89,8 +90,18 @@ export function buildAutomaticSummary(
   const expenseTotal = expenseAvailable.reduce((sum, item) => sum + (item.totalNet ?? 0), 0);
   const attendanceAvailable = digest.activityByYear.filter((item) => item.attendance?.rate != null);
 
+  const projectsAvailable = digest.projects.available;
+
+  const recordParts = [
+    projectsAvailable
+      ? `${digest.projects.total.toLocaleString("pt-BR")} projetos com participação registrada como autor`
+      : "dados de projetos temporariamente indisponíveis",
+    `${totalVotes.toLocaleString("pt-BR")} votos nominais`,
+    `${totalSpeeches.toLocaleString("pt-BR")} discursos`,
+  ];
+
   const parts = [
-    `Nos registros oficiais consultados para ${years[0]} a ${years[years.length - 1]}, foram encontrados ${digest.projects.total.toLocaleString("pt-BR")} projetos com participação registrada como autor, ${totalVotes.toLocaleString("pt-BR")} votos nominais e ${totalSpeeches.toLocaleString("pt-BR")} discursos.`,
+    `Nos registros oficiais consultados para ${years[0]} a ${years[years.length - 1]}, foram identificados ${recordParts.join(", ")}.`,
   ];
 
   if (expenseAvailable.length) {
@@ -111,20 +122,27 @@ export function buildAutomaticSummary(
     },
     overview: parts.join(" "),
     highlights: [
-      `${digest.projects.total.toLocaleString("pt-BR")} projetos com participação registrada como autor.`,
-      `${digest.projects.becameRule.toLocaleString("pt-BR")} aparecem com situação oficial compatível com transformação em lei ou outra norma.`,
+      ...(projectsAvailable
+        ? [
+            `${digest.projects.total.toLocaleString("pt-BR")} projetos com participação registrada como autor.`,
+            `${digest.projects.becameRule.toLocaleString("pt-BR")} aparecem com situação oficial compatível com transformação em lei ou outra norma.`,
+          ]
+        : []),
       `${totalVotes.toLocaleString("pt-BR")} votos nominais identificados nos anos consultados.`,
       `${totalSpeeches.toLocaleString("pt-BR")} discursos ou pronunciamentos identificados.`,
     ],
     frequentTopics: [],
     limitations: [
       "Este texto automático organiza contagens dos registros disponíveis e não avalia desempenho, qualidade ou intenção política.",
+      ...(!projectsAvailable
+        ? ["A consulta de projetos estava temporariamente indisponível; por isso, nenhuma contagem de projetos foi apresentada."]
+        : []),
       ...(attendanceAvailable.length < years.length
         ? ["A presença não possui percentual disponível para todos os anos do mandato."]
         : []),
     ],
     coverage: {
-      projects: digest.projects.total,
+      projects: projectsAvailable ? digest.projects.total : 0,
       projectsBecameRule: digest.projects.becameRule,
       votes: totalVotes,
       speeches: totalSpeeches,
@@ -188,7 +206,7 @@ Responda SOMENTE com JSON válido neste formato:
         },
       ],
       response_format: { type: "json_object" },
-      max_completion_tokens: 1200,
+      max_completion_tokens: 800,
     }),
   });
 

@@ -17,6 +17,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
+import ProfileAvatarEditor from "@/components/account/ProfileAvatarEditor";
 
 type SettingsShellProps = {
   initialDisplayName?: string;
@@ -251,6 +252,7 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
                 <div className="settings-card-icon"><UserRound size={18} /></div>
                 <div><small>PERFIL</small><h2>Informações da conta</h2></div>
               </div>
+              <ProfileAvatarEditor />
               <form onSubmit={saveProfile} className="settings-form">
                 <label>
                   <span>Nome de exibição</span>
