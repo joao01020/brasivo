@@ -68,7 +68,7 @@ export type ChamberExpense = {
 export type MandateExpenseSummary = {
   year: number;
   status: "available" | "unavailable";
-  sourceKind: "api" | "dataset" | "unavailable";
+  sourceKind: "api" | "dataset" | "database" | "unavailable";
   sourceUrl: string;
   note?: string;
   totalNet: number;

@@ -13,18 +13,20 @@ import {
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
 
 type SettingsShellProps = {
-  initialDisplayName: string;
-  email: string;
+  initialDisplayName?: string;
+  email?: string;
 };
 
-export default function SettingsShell({ initialDisplayName, email }: SettingsShellProps) {
+export default function SettingsShell({ initialDisplayName = "", email: initialEmail = "" }: SettingsShellProps = {}) {
   const router = useRouter();
+  const [sessionLoading, setSessionLoading] = useState(!initialEmail);
+  const [email, setEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
@@ -41,6 +43,33 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
   const confirmationText = "EXCLUIR MINHA CONTA";
+
+  useEffect(() => {
+    if (initialEmail) return;
+    let active = true;
+    const client = createClient();
+    (async () => {
+      const { data: { session } } = await client.auth.getSession();
+      const user = session?.user;
+      if (!active) return;
+      if (!user) {
+        router.replace("/login?next=/settings");
+        return;
+      }
+      const { data: profile } = await client
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!active) return;
+      const userEmail = user.email ?? "";
+      const metadataName = typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
+      setEmail(userEmail);
+      setDisplayName(profile?.display_name || metadataName || userEmail.split("@")[0] || "Usuário");
+      setSessionLoading(false);
+    })();
+    return () => { active = false; };
+  }, [initialEmail, router]);
 
   function showMessage(text: string, type: "success" | "error" = "success") {
     setMessage(text);
@@ -177,6 +206,10 @@ export default function SettingsShell({ initialDisplayName, email }: SettingsShe
       showMessage("Não foi possível excluir a conta. Verifique sua conexão e tente novamente.", "error");
       setDeletingAccount(false);
     }
+  }
+
+  if (sessionLoading) {
+    return <main className="settings-page"><section className="settings-content"><div className="settings-heading"><span>MINHA CONTA</span><h1>Carregando configurações…</h1></div></section></main>;
   }
 
   return (
