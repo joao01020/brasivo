@@ -51,6 +51,15 @@ export default function DashboardHeader({
   const [profileOpen, setProfileOpen] = useState(false);
   const [items, setItems] = useState(notifications);
   const [unread, setUnread] = useState(unreadNotifications);
+
+  useEffect(() => {
+    setItems(notifications);
+  }, [notifications]);
+
+  useEffect(() => {
+    setUnread(unreadNotifications);
+  }, [unreadNotifications]);
+
   const notificationRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 

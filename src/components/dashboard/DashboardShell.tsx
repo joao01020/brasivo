@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
+import { subscribeToMandateNotifications } from "@/lib/notifications/realtime";
 
 type ExpenseTrend={current:number;previous:number;percentChange:number|null;monthlyValues:number[]};
 type Followed={id:string;representative_external_id:string;representative_source:string;representative_name:string;representative_office:string|null;representative_state:string|null;created_at:string;photoUrl:string|null;expenseTrend:ExpenseTrend|null};
@@ -28,6 +29,25 @@ export default function DashboardShell(props:Props={}){
  const [notifications,setNotifications]=useState<DashboardNotification[]>(props.notifications??[]);
  const [unreadNotifications,setUnreadNotifications]=useState(props.unreadNotifications??0);
  const [followedMandates,setFollowedMandates]=useState<Followed[]>(props.followedMandates??[]);
+
+ /* BRASIVO_MANDATE_NOTIFICATIONS_REALTIME_V6 */
+ useEffect(()=>{
+  const supabase=createClient();
+  let channel:any=null;
+  let alive=true;
+  (async()=>{
+   const {data:{session}}=await supabase.auth.getSession();
+   const user=session?.user;
+   if(!alive||!user)return;
+   channel=subscribeToMandateNotifications({supabase,userId:user.id,onInsert:(item)=>{
+    if(!alive)return;
+    setNotifications(current=>{if(current.some(existing=>existing.id===item.id))return current;return [item,...current].slice(0,12)});
+    if(!item.readAt)setUnreadNotifications(current=>current+1);
+   }});
+  })();
+  return()=>{alive=false;if(channel)supabase.removeChannel(channel)};
+ },[]);
+
 
  useEffect(()=>{
   if(props.displayName){setLoading(false);return}
