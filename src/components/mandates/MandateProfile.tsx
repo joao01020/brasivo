@@ -18,7 +18,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
-import type { MandateActivity, MandateExpenseSummary } from "@/types/chamber";
+import type { MandateExpenseSummary } from "@/types/chamber";
+import MandateActivityPanel from "@/components/mandate/MandateActivityPanel";
 
 type Mandate = {
   id: number;
@@ -43,7 +44,6 @@ function followLabel(count: number) {
 export default function MandateProfile({ id }: { id: string }) {
   const searchParams = useSearchParams();
   const [mandate, setMandate] = useState<Mandate | null>(null);
-  const [activities, setActivities] = useState<MandateActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
@@ -67,7 +67,6 @@ export default function MandateProfile({ id }: { id: string }) {
       .then(([profile, followers]) => {
         if (!active) return;
         setMandate(profile.mandate ?? null);
-        setActivities(profile.activities ?? []);
         setFollowCount(followers.available === false ? null : Number(followers.count ?? 0));
       })
       .catch(() => {
@@ -214,18 +213,7 @@ export default function MandateProfile({ id }: { id: string }) {
             </div>
 
             {activeTab === "activity" ? (
-              <>
-                <div className="profile-section-heading"><div><small>REGISTROS OFICIAIS</small><h2>Atividade recente</h2></div><CalendarDays size={18} /></div>
-                {activities.length ? (
-                  <div className="activity-timeline">{activities.map((activity) => (
-                    <div className="activity-item" key={activity.id}><i /><div>
-                      <span>{new Date(activity.occurredAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}</span>
-                      <h3>{activity.title}</h3><p>{activity.description}</p>
-                      <a href={activity.sourceUrl} target="_blank" rel="noreferrer">Ver registro oficial <ExternalLink size={12} /></a>
-                    </div></div>
-                  ))}</div>
-                ) : <div className="profile-empty">Nenhuma atividade recente foi retornada pela fonte oficial.</div>}
-              </>
+              <MandateActivityPanel mandateId={id} />
             ) : (
               <div className="mandate-expenses">
                 <div className="profile-section-heading expenses-heading"><div><small>CEAP · DADOS OFICIAIS</small><h2>Despesas do mandato</h2></div>
