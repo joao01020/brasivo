@@ -1,0 +1,302 @@
+.page {
+  min-height: 100vh;
+  background: #03090c;
+  color: #d7e1e5;
+}
+
+.topbar {
+  min-height: 72px;
+  padding: 0 32px;
+  border-bottom: 1px solid rgba(80, 106, 116, 0.13);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.topbarRight,
+.actions,
+.tabs,
+.summaryGrid {
+  display: flex;
+  align-items: center;
+}
+
+.topbarRight {
+  gap: 14px;
+}
+
+.content {
+  width: min(1120px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 42px 0 64px;
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  min-height: 160px;
+}
+
+.heroCopy {
+  flex: 1;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(43, 61, 68, 0.32);
+  border: 1px solid rgba(88, 114, 124, 0.09);
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-110%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(106, 139, 150, 0.10),
+    transparent
+  );
+  animation: shimmer 1.55s ease-in-out infinite;
+}
+
+.brand {
+  width: 92px;
+  height: 18px;
+  border-radius: 6px;
+}
+
+.topbarAction {
+  width: 118px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+
+.photo {
+  width: 124px;
+  height: 124px;
+  flex: 0 0 124px;
+  border-radius: 18px;
+}
+
+.kicker {
+  width: 92px;
+  height: 10px;
+  border-radius: 4px;
+  margin-bottom: 13px;
+}
+
+.title {
+  width: min(340px, 72%);
+  height: 28px;
+  border-radius: 7px;
+  margin-bottom: 12px;
+}
+
+.subtitle {
+  width: 155px;
+  height: 13px;
+  border-radius: 5px;
+}
+
+.actions {
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.button {
+  width: 112px;
+  height: 38px;
+  border-radius: 9px;
+}
+
+.buttonSecondary {
+  width: 110px;
+  height: 38px;
+  border-radius: 9px;
+}
+
+.divider {
+  height: 1px;
+  margin: 26px 0 22px;
+  background: rgba(76, 103, 112, 0.17);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 14px;
+}
+
+.mainCard,
+.sideCard {
+  border: 1px solid rgba(63, 91, 101, 0.25);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #091216, #060b0e);
+}
+
+.mainCard {
+  min-height: 450px;
+}
+
+.tabs {
+  gap: 26px;
+  min-height: 50px;
+  padding: 0 22px;
+  border-bottom: 1px solid rgba(72, 98, 107, 0.18);
+}
+
+.tab {
+  width: 72px;
+  height: 11px;
+  border-radius: 5px;
+}
+
+.tabWide {
+  width: 126px;
+  height: 11px;
+  border-radius: 5px;
+}
+
+.cardBody {
+  padding: 34px 22px;
+}
+
+.sectionKicker {
+  width: 116px;
+  height: 9px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+}
+
+.sectionTitle {
+  width: 230px;
+  height: 23px;
+  border-radius: 6px;
+  margin-bottom: 22px;
+}
+
+.lineLong,
+.lineMedium {
+  height: 11px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.lineLong {
+  width: 72%;
+}
+
+.lineMedium {
+  width: 53%;
+}
+
+.summaryGrid {
+  gap: 12px;
+  margin-top: 34px;
+}
+
+.summaryBox {
+  width: 130px;
+  height: 74px;
+  border-radius: 11px;
+}
+
+.sideCard {
+  min-height: 450px;
+  padding: 28px 22px;
+}
+
+.sideKicker {
+  width: 85px;
+  height: 9px;
+  border-radius: 4px;
+  margin-bottom: 28px;
+}
+
+.sideLine {
+  width: 78%;
+  height: 11px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+}
+
+.sideLineShort {
+  width: 42%;
+  height: 11px;
+  border-radius: 5px;
+}
+
+.sideDivider {
+  height: 1px;
+  margin: 22px 0;
+  background: rgba(72, 98, 107, 0.16);
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+@media (max-width: 820px) {
+  .content {
+    width: min(100% - 28px, 720px);
+    padding-top: 28px;
+  }
+
+  .columns {
+    grid-template-columns: 1fr;
+  }
+
+  .sideCard {
+    min-height: 230px;
+  }
+}
+
+@media (max-width: 560px) {
+  .topbar {
+    padding: 0 18px;
+  }
+
+  .topbarAction {
+    display: none;
+  }
+
+  .hero {
+    align-items: flex-start;
+    gap: 18px;
+  }
+
+  .photo {
+    width: 88px;
+    height: 88px;
+    flex-basis: 88px;
+  }
+
+  .summaryGrid {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .summaryBox {
+    width: 100%;
+    height: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    display: none;
+  }
+}

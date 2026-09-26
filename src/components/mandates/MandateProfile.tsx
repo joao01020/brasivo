@@ -22,6 +22,7 @@ import type { MandateExpenseSummary } from "@/types/chamber";
 import MandateActivityPanel from "@/components/mandate/MandateActivityPanel";
 import MandateProjectsPanel from "@/components/mandate/MandateProjectsPanel";
 import MandateSummaryCard from "@/components/mandate/MandateSummaryCard";
+import MandateProfileInitialLoading from "@/components/mandate/MandateProfileInitialLoading";
 
 type Mandate = {
   id: number;
@@ -166,7 +167,7 @@ export default function MandateProfile({ id }: { id: string }) {
     }
   }
 
-  if (loading) return <main className="parliamentary-page"><div className="profile-loading"><LoaderCircle className="spin" />Consultando fonte oficial…</div></main>;
+  if (loading) return <MandateProfileInitialLoading />;
   if (!mandate) return <main className="parliamentary-page"><div className="profile-loading">Não foi possível carregar este mandato.</div></main>;
 
   return (
