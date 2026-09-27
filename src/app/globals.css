@@ -3374,3 +3374,386 @@ button.followed-expense-trend{font:inherit;text-align:left;color:inherit;backgro
     animation: none;
   }
 }
+
+/* ===== BRASIVO DASHBOARD HOVER CHART + AVATAR REFINEMENTS ===== */
+
+/* foto do mandato observado: circular e com mais respiro */
+.followed-row-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.followed-row-photo,
+.followed-row-photo-placeholder {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  border-radius: 999px !important;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.followed-row-photo {
+  object-fit: cover;
+  display: block;
+  box-shadow: 0 0 0 1px rgba(120, 255, 210, 0.08);
+}
+
+.followed-row-photo-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* mini gráfico: animação subindo no hover */
+.trend-bars,
+.followed-trend-bars,
+.followed-row-chart,
+.followed-sparkline {
+  align-items: flex-end;
+}
+
+.trend-bars > *,
+.followed-trend-bars > *,
+.followed-row-chart > *,
+.followed-sparkline > * {
+  transform-origin: center bottom;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+/* animação ao passar o mouse na linha inteira ou ao focar */
+.followed-row:hover .trend-bars > *,
+.followed-row:focus-within .trend-bars > *,
+.followed-row:hover .followed-trend-bars > *,
+.followed-row:focus-within .followed-trend-bars > *,
+.followed-row:hover .followed-row-chart > *,
+.followed-row:focus-within .followed-row-chart > *,
+.followed-row:hover .followed-sparkline > *,
+.followed-row:focus-within .followed-sparkline > * {
+  animation: brasivoBarRise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.followed-row:hover .trend-bars > *:nth-child(1),
+.followed-row:focus-within .trend-bars > *:nth-child(1),
+.followed-row:hover .followed-trend-bars > *:nth-child(1),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(1),
+.followed-row:hover .followed-row-chart > *:nth-child(1),
+.followed-row:focus-within .followed-row-chart > *:nth-child(1),
+.followed-row:hover .followed-sparkline > *:nth-child(1),
+.followed-row:focus-within .followed-sparkline > *:nth-child(1) { animation-delay: 0ms; }
+
+.followed-row:hover .trend-bars > *:nth-child(2),
+.followed-row:focus-within .trend-bars > *:nth-child(2),
+.followed-row:hover .followed-trend-bars > *:nth-child(2),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(2),
+.followed-row:hover .followed-row-chart > *:nth-child(2),
+.followed-row:focus-within .followed-row-chart > *:nth-child(2),
+.followed-row:hover .followed-sparkline > *:nth-child(2),
+.followed-row:focus-within .followed-sparkline > *:nth-child(2) { animation-delay: 40ms; }
+
+.followed-row:hover .trend-bars > *:nth-child(3),
+.followed-row:focus-within .trend-bars > *:nth-child(3),
+.followed-row:hover .followed-trend-bars > *:nth-child(3),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(3),
+.followed-row:hover .followed-row-chart > *:nth-child(3),
+.followed-row:focus-within .followed-row-chart > *:nth-child(3),
+.followed-row:hover .followed-sparkline > *:nth-child(3),
+.followed-row:focus-within .followed-sparkline > *:nth-child(3) { animation-delay: 80ms; }
+
+.followed-row:hover .trend-bars > *:nth-child(4),
+.followed-row:focus-within .trend-bars > *:nth-child(4),
+.followed-row:hover .followed-trend-bars > *:nth-child(4),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(4),
+.followed-row:hover .followed-row-chart > *:nth-child(4),
+.followed-row:focus-within .followed-row-chart > *:nth-child(4),
+.followed-row:hover .followed-sparkline > *:nth-child(4),
+.followed-row:focus-within .followed-sparkline > *:nth-child(4) { animation-delay: 120ms; }
+
+.followed-row:hover .trend-bars > *:nth-child(5),
+.followed-row:focus-within .trend-bars > *:nth-child(5),
+.followed-row:hover .followed-trend-bars > *:nth-child(5),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(5),
+.followed-row:hover .followed-row-chart > *:nth-child(5),
+.followed-row:focus-within .followed-row-chart > *:nth-child(5),
+.followed-row:hover .followed-sparkline > *:nth-child(5),
+.followed-row:focus-within .followed-sparkline > *:nth-child(5) { animation-delay: 160ms; }
+
+.followed-row:hover .trend-bars > *:nth-child(6),
+.followed-row:focus-within .trend-bars > *:nth-child(6),
+.followed-row:hover .followed-trend-bars > *:nth-child(6),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(6),
+.followed-row:hover .followed-row-chart > *:nth-child(6),
+.followed-row:focus-within .followed-row-chart > *:nth-child(6),
+.followed-row:hover .followed-sparkline > *:nth-child(6),
+.followed-row:focus-within .followed-sparkline > *:nth-child(6) { animation-delay: 200ms; }
+
+.followed-row:hover .trend-bars > *:nth-child(7),
+.followed-row:focus-within .trend-bars > *:nth-child(7),
+.followed-row:hover .followed-trend-bars > *:nth-child(7),
+.followed-row:focus-within .followed-trend-bars > *:nth-child(7),
+.followed-row:hover .followed-row-chart > *:nth-child(7),
+.followed-row:focus-within .followed-row-chart > *:nth-child(7),
+.followed-row:hover .followed-sparkline > *:nth-child(7),
+.followed-row:focus-within .followed-sparkline > *:nth-child(7) { animation-delay: 240ms; }
+
+@keyframes brasivoBarRise {
+  from {
+    transform: scaleY(0);
+    opacity: 0.25;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .followed-row:hover .trend-bars > *,
+  .followed-row:focus-within .trend-bars > *,
+  .followed-row:hover .followed-trend-bars > *,
+  .followed-row:focus-within .followed-trend-bars > *,
+  .followed-row:hover .followed-row-chart > *,
+  .followed-row:focus-within .followed-row-chart > *,
+  .followed-row:hover .followed-sparkline > *,
+  .followed-row:focus-within .followed-sparkline > * {
+    animation: none;
+  }
+}
+
+/* ===== END BRASIVO DASHBOARD HOVER CHART + AVATAR REFINEMENTS ===== */
+
+/* ============================================================
+   BRASIVO — DASHBOARD AVATAR POSITION V2
+   ============================================================ */
+
+.followed-row-content {
+  gap: 17px;
+}
+
+.followed-row-photo,
+.followed-row-photo-placeholder {
+  transform: translate(-5px, -3px);
+}
+
+.followed-row-photo {
+  border-radius: 999px !important;
+  object-fit: cover;
+}
+
+/* ===== BRASIVO DASHBOARD SKELETON ALIGNMENT V2 ===== */
+
+/*
+ * Mantém o skeleton geometricamente próximo do dashboard real.
+ * Evita deslocamento perceptível quando os dados terminam de carregar.
+ */
+
+/* ------------------------------------------------------------
+   LINHA DO MANDATO
+   ------------------------------------------------------------ */
+
+.dashboard-loading-row {
+  min-height: 76px;
+  align-items: center;
+}
+
+/* ------------------------------------------------------------
+   FOTO / AVATAR
+   Mesmo posicionamento usado pela foto real.
+   ------------------------------------------------------------ */
+
+.dashboard-loading-person {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+
+.dashboard-skeleton-person-photo {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+
+  border-radius: 999px;
+
+  flex: 0 0 auto;
+
+  transform: translate(-5px, -3px);
+
+  box-shadow:
+    0 0 0 1px rgba(120, 255, 210, 0.04);
+}
+
+/* ------------------------------------------------------------
+   TEXTO AO LADO DA FOTO
+   ------------------------------------------------------------ */
+
+.dashboard-loading-person-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dashboard-skeleton-person-type {
+  width: 70px;
+  height: 5px;
+}
+
+.dashboard-skeleton-person-name {
+  width: 112px;
+  height: 10px;
+}
+
+.dashboard-skeleton-person-state {
+  width: 23px;
+  height: 5px;
+}
+
+/* ------------------------------------------------------------
+   BLOCO CEAP
+   Mantém alinhamento próximo do conteúdo definitivo.
+   ------------------------------------------------------------ */
+
+.dashboard-loading-expense {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.dashboard-skeleton-expense-label {
+  width: 72px;
+  height: 5px;
+}
+
+.dashboard-skeleton-expense-value {
+  width: 92px;
+  height: 10px;
+}
+
+.dashboard-skeleton-expense-meta {
+  width: 116px;
+  height: 5px;
+}
+
+/* ------------------------------------------------------------
+   MINI GRÁFICO
+   Alinhado exatamente pela base.
+   ------------------------------------------------------------ */
+
+.dashboard-loading-bars {
+  height: 26px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+
+  gap: 3px;
+
+  transform-origin: bottom;
+}
+
+.dashboard-loading-bars i {
+  width: 4px;
+
+  border-radius: 2px 2px 1px 1px;
+
+  background: rgba(26, 168, 108, 0.48);
+
+  transform-origin: center bottom;
+
+  animation:
+    brasivoSkeletonBarBreath
+    1.7s
+    ease-in-out
+    infinite;
+}
+
+.dashboard-loading-bars i:nth-child(1) {
+  height: 13px;
+  animation-delay: 0ms;
+}
+
+.dashboard-loading-bars i:nth-child(2) {
+  height: 22px;
+  animation-delay: 90ms;
+}
+
+.dashboard-loading-bars i:nth-child(3) {
+  height: 17px;
+  animation-delay: 180ms;
+}
+
+.dashboard-loading-bars i:nth-child(4) {
+  height: 10px;
+  animation-delay: 270ms;
+}
+
+.dashboard-loading-bars i:nth-child(5) {
+  height: 7px;
+  animation-delay: 360ms;
+}
+
+/*
+ * Durante o skeleton não fazemos o gráfico "nascer"
+ * repetidamente de zero, para não parecer uma informação real.
+ * É apenas um pulso leve de carregamento.
+ */
+@keyframes brasivoSkeletonBarBreath {
+  0%,
+  100% {
+    opacity: 0.32;
+    transform: scaleY(0.82);
+  }
+
+  50% {
+    opacity: 0.72;
+    transform: scaleY(1);
+  }
+}
+
+/* ------------------------------------------------------------
+   SHIMMER DO AVATAR
+   Mantém o efeito de loading dentro do círculo.
+   ------------------------------------------------------------ */
+
+.dashboard-skeleton-person-photo::after {
+  border-radius: inherit;
+}
+
+/* ------------------------------------------------------------
+   RESPONSIVO
+   ------------------------------------------------------------ */
+
+@media (max-width: 900px) {
+  .dashboard-loading-person {
+    gap: 14px;
+  }
+
+  .dashboard-skeleton-person-photo {
+    transform: translate(-2px, -2px);
+  }
+}
+
+/* ------------------------------------------------------------
+   ACESSIBILIDADE
+   ------------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-loading-bars i {
+    animation: none;
+    transform: none;
+    opacity: 0.55;
+  }
+}
+
+/* ===== END BRASIVO DASHBOARD SKELETON ALIGNMENT V2 ===== */
