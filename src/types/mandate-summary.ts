@@ -1,30 +1,33 @@
-export type MandateAiSummaryMode = "ai" | "automatic";
-
-export type MandateAiSummary = {
+export type MandateSummary = {
   mandateId: number;
-  mode: MandateAiSummaryMode;
-  provider: "groq" | null;
-  model: string | null;
+
+  mode: "factual";
+
   period: {
+    years: number[];
     startYear: number;
     endYear: number;
-    years: number[];
   };
+
   overview: string;
+
   highlights: string[];
-  frequentTopics: string[];
+
   limitations: string[];
+
   coverage: {
-    projects: number;
-    projectsBecameRule: number;
-    votes: number;
-    speeches: number;
+    projects: number | null;
+    projectsBecameRule: number | null;
+    votes: number | null;
+    speeches: number | null;
     expenseYearsAvailable: number;
     attendanceYearsAvailable: number;
   };
+
   sources: Array<{
     label: string;
     url: string;
   }>;
+
   generatedAt: string;
 };

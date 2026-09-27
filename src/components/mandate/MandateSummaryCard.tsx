@@ -1,286 +1,873 @@
 "use client";
 
 import {
-  ChevronDown,
   ExternalLink,
+  Eye,
   Info,
-  LoaderCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import type { MandateAiSummary } from "@/types/mandate-ai-summary";
-import AiSummaryEyeIcon from "@/components/mandate/AiSummaryEyeIcon";
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import styles from "./MandateSummaryCard.module.css";
+import type {
+  MandateSummaryStreamEvent,
+} from "@/types/mandate-summary-stream";
 
-type Props = { mandateId: string | number };
+type Props = {
+  mandateId:
+    | number
+    | string;
+};
 
-function formatDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "America/Sao_Paulo",
-  }).format(date);
-}
+const SOURCE_LABELS = {
+  projects:
+    "Projetos",
+  activity:
+    "Atividades",
+  expenses:
+    "Despesas",
+} as const;
 
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false);
+type SourceState = {
+  status:
+    | "idle"
+    | "loading"
+    | "ready"
+    | "partial"
+    | "unavailable";
+  message: string;
+};
 
-  useEffect(() => {
-    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setReduced(media.matches);
-    update();
-    media.addEventListener?.("change", update);
-    return () => media.removeEventListener?.("change", update);
-  }, []);
+const INITIAL_SOURCES: Record<
+  keyof typeof SOURCE_LABELS,
+  SourceState
+> = {
+  projects: {
+    status:
+      "idle",
+    message:
+      "",
+  },
+  activity: {
+    status:
+      "idle",
+    message:
+      "",
+  },
+  expenses: {
+    status:
+      "idle",
+    message:
+      "",
+  },
+};
 
-  return reduced;
-}
+function parseSseChunk(
+  buffer: string,
+) {
+  const events:
+    MandateSummaryStreamEvent[] = [];
 
-function useProgressiveText(text: string, enabled: boolean) {
-  const reducedMotion = useReducedMotion();
-  const [visibleLength, setVisibleLength] = useState(0);
+  const blocks =
+    buffer.split(
+      "\n\n",
+    );
 
-  useEffect(() => {
-    if (!text) {
-      setVisibleLength(0);
-      return;
+  const remainder =
+    blocks.pop() ??
+    "";
+
+  for (
+    const block
+    of blocks
+  ) {
+    const dataLine =
+      block
+        .split(
+          "\n",
+        )
+        .find(
+          (
+            line,
+          ) =>
+            line.startsWith(
+              "data:",
+            ),
+        );
+
+    if (!dataLine) {
+      continue;
     }
 
-    if (!enabled || reducedMotion) {
-      setVisibleLength(text.length);
-      return;
+    try {
+      events.push(
+        JSON.parse(
+          dataLine
+            .slice(
+              5,
+            )
+            .trim(),
+        ),
+      );
+    } catch {
+      // Ignore an invalid event without breaking the stream.
     }
-
-    setVisibleLength(0);
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    let index = 0;
-
-    const step = () => {
-      if (cancelled) return;
-
-      const remaining = text.length - index;
-      if (remaining <= 0) return;
-
-      // O texto avança em pequenos blocos para parecer natural sem ficar lento.
-      const chunk = remaining > 90 ? 3 : remaining > 35 ? 2 : 1;
-      index = Math.min(text.length, index + chunk);
-      setVisibleLength(index);
-
-      if (index >= text.length) return;
-
-      const previous = text[index - 1] ?? "";
-      const pause = /[.!?]/.test(previous)
-        ? 85
-        : /[,;:]/.test(previous)
-          ? 48
-          : previous === " "
-            ? 20
-            : 14;
-
-      timer = setTimeout(step, pause);
-    };
-
-    timer = setTimeout(step, 110);
-
-    return () => {
-      cancelled = true;
-      if (timer) clearTimeout(timer);
-    };
-  }, [text, enabled, reducedMotion]);
+  }
 
   return {
-    text: text.slice(0, visibleLength),
-    done: visibleLength >= text.length,
+    events,
+    remainder,
   };
 }
 
-export default function MandateSummaryCard({ mandateId }: Props) {
-  const [data, setData] = useState<MandateAiSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
+export default function MandateSummaryCard({
+  mandateId,
+}: Props) {
+  const [
+    summary,
+    setSummary,
+  ] =
+    useState(
+      "",
+    );
 
-  useEffect(() => {
-    const controller = new AbortController();
-    let mounted = true;
+  /*
+   * One authoritative client-side text buffer.
+   *
+   * Before V32, factualBase / aiText / enrichmentText were independent
+   * React states. Streaming callbacks could read stale closures and one
+   * phase could visually replace another.
+   *
+   * V32 keeps one mutable stream buffer and mirrors it to React state.
+   */
+  const streamBufferRef =
+    useRef(
+      "",
+    );
 
-    setLoading(true);
-    setError(null);
-    setData(null);
-    setExpanded(false);
+  const aiStartedRef =
+    useRef(
+      false,
+    );
 
-    fetch(`/api/mandates/${encodeURIComponent(String(mandateId))}/summary`, {
-      signal: controller.signal,
-      cache: "no-store",
-    })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok) throw new Error(payload?.error || "Falha ao gerar resumo.");
-        return payload as MandateAiSummary;
-      })
-      .then((payload) => {
-        if (mounted) setData(payload);
-      })
-      .catch((reason) => {
-        if (mounted && reason?.name !== "AbortError") {
-          setError(reason instanceof Error ? reason.message : "Falha ao gerar resumo.");
+
+
+
+  const [
+    status,
+    setStatus,
+  ] =
+    useState(
+      "Buscando informações oficiais…",
+    );
+
+  const [
+    sources,
+    setSources,
+  ] =
+    useState(
+      INITIAL_SOURCES,
+    );
+
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(
+      true,
+    );
+
+  const [
+    stale,
+    setStale,
+  ] =
+    useState(
+      false,
+    );
+
+  const [
+    generatedAt,
+    setGeneratedAt,
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
+
+  const [
+    error,
+    setError,
+  ] =
+    useState<
+      string | null
+    >(
+      null,
+    );
+
+  useEffect(
+    () => {
+      const controller =
+        new AbortController();
+
+      let mounted =
+        true;
+
+      streamBufferRef.current =
+        "";
+      aiStartedRef.current =
+        false;
+
+      setSummary(
+        "",
+      );
+      setStatus(
+        "Buscando informações oficiais…",
+      );
+      setSources(
+        INITIAL_SOURCES,
+      );
+      setLoading(
+        true,
+      );
+      setStale(
+        false,
+      );
+      setGeneratedAt(
+        null,
+      );
+      setError(
+        null,
+      );
+
+      async function run() {
+        try {
+          const response =
+            await fetch(
+              `/api/mandates/${encodeURIComponent(String(mandateId))}/summary-stream`,
+              {
+                cache:
+                  "no-store",
+                signal:
+                  controller.signal,
+                headers: {
+                  accept:
+                    "text/event-stream",
+                },
+              },
+            );
+
+          if (
+            !response.ok ||
+            !response.body
+          ) {
+            throw new Error(
+              `HTTP ${response.status}`,
+            );
+          }
+
+          const reader =
+            response.body
+              .getReader();
+
+          const decoder =
+            new TextDecoder();
+
+          let buffer =
+            "";
+
+          while (
+            mounted
+          ) {
+            const {
+              done,
+              value,
+            } =
+              await reader.read();
+
+            if (done) {
+              break;
+            }
+
+            buffer +=
+              decoder.decode(
+                value,
+                {
+                  stream:
+                    true,
+                },
+              );
+
+            const parsed =
+              parseSseChunk(
+                buffer,
+              );
+
+            buffer =
+              parsed.remainder;
+
+            for (
+              const event
+              of parsed.events
+            ) {
+              if (
+                !mounted
+              ) {
+                break;
+              }
+
+              if (
+                event.type ===
+                "status"
+              ) {
+                setStatus(
+                  event.message,
+                );
+              }
+
+              if (
+                event.type ===
+                "source"
+              ) {
+                setSources(
+                  (
+                    current,
+                  ) => ({
+                    ...current,
+                    [event.source]:
+                      {
+                        status:
+                          event.status,
+                        message:
+                          event.message,
+                      },
+                  }),
+                );
+              }
+
+              if (
+                event.type ===
+                "cache"
+              ) {
+                aiStartedRef.current =
+                  true;
+
+                streamBufferRef.current =
+                  event.summary;
+
+                setSummary(
+                  event.summary,
+                );
+                setStale(
+                  event.stale,
+                );
+                setGeneratedAt(
+                  event.generatedAt,
+                );
+
+                if (
+                  !event.stale
+                ) {
+                  setLoading(
+                    false,
+                  );
+                }
+              }
+
+              if (
+                event.type ===
+                "factual"
+              ) {
+                /*
+                 * V33: factual/provisional text is internal only.
+                 * It must never be rendered over or before AI output.
+                 */
+                continue;
+              }
+
+              if (
+                event.type ===
+                "ai_start"
+              ) {
+                /*
+                 * The AI stream is the only progressive text shown.
+                 * Clear any provisional compatibility text once, before
+                 * the first token, never again during this stream.
+                 */
+                aiStartedRef.current =
+                  true;
+                streamBufferRef.current =
+                  "";
+
+                setSummary(
+                  "",
+                );
+
+                setStatus(
+                  "Escrevendo a visão geral com os dados confirmados…",
+                );
+              }
+
+              if (
+                event.type ===
+                "ai_delta"
+              ) {
+                streamBufferRef.current +=
+                  event.text;
+
+                setSummary(
+                  streamBufferRef.current,
+                );
+              }
+
+              if (
+                event.type ===
+                  "enrichment_start" ||
+                event.type ===
+                  "enrichment_delta"
+              ) {
+                /*
+                 * V33: only ai_delta is allowed to write the visible
+                 * generated summary.
+                 */
+                continue;
+              }
+
+              if (
+                event.type ===
+                "done"
+              ) {
+                /*
+                 * Final server text should normally be byte-for-byte the
+                 * streamed text. Only update React if fallback/cache guard
+                 * produced a genuinely different final value.
+                 */
+                if (
+                  streamBufferRef.current.trim() !==
+                  event.summary.trim()
+                ) {
+                  streamBufferRef.current =
+                    event.summary;
+
+                  setSummary(
+                    event.summary,
+                  );
+                }
+
+                setGeneratedAt(
+                  event.generatedAt,
+                );
+                setStale(
+                  false,
+                );
+                setStatus(
+                  "Resumo atualizado.",
+                );
+                setLoading(
+                  false,
+                );
+              }
+
+              if (
+                event.type ===
+                "error"
+              ) {
+                if (
+                  !streamBufferRef.current.trim()
+                ) {
+                  setError(
+                    event.message,
+                  );
+                }
+
+                setLoading(
+                  false,
+                );
+              }
+            }
+          }
+        } catch (
+          reason
+        ) {
+          if (
+            !mounted ||
+            (
+              reason instanceof
+                DOMException &&
+              reason.name ===
+                "AbortError"
+            )
+          ) {
+            return;
+          }
+
+          setError(
+            "Não foi possível atualizar o resumo neste momento.",
+          );
+
+          setLoading(
+            false,
+          );
         }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
+      }
 
-    return () => {
-      mounted = false;
-      controller.abort();
-    };
-  }, [mandateId]);
+      void run();
 
-  const overviewSource = data?.overview ?? "";
-  const shouldAnimateOverview = data?.mode === "ai";
-  const progressiveOverview = useProgressiveText(overviewSource, shouldAnimateOverview);
-
-  const summaryReady = Boolean(data) && progressiveOverview.done;
-
-  const detailsClassName = useMemo(
-    () => `${styles.details}${expanded ? ` ${styles.detailsVisible}` : ""}`,
-    [expanded],
+      return () => {
+        mounted =
+          false;
+        controller.abort();
+      };
+    },
+    [
+      mandateId,
+    ],
   );
 
+  const hasSummary =
+    Boolean(
+      summary.trim(),
+    );
+
   return (
-    <section className={styles.root} aria-label="Resumo do mandato">
-      <div className={styles.header}>
-        <div className={styles.headingGroup}>
-          <AiSummaryEyeIcon loading={loading || Boolean(data?.mode === "ai" && !progressiveOverview.done)} />
+    <section
+      className={
+        styles.root
+      }
+      aria-label="Resumo do mandato"
+    >
+      <div
+        className={
+          styles.header
+        }
+      >
+        <div
+          className={
+            styles.headingGroup
+          }
+        >
+          <div
+            className={
+              styles.eyeBox
+            }
+            aria-hidden="true"
+          >
+            <Eye
+              size={
+                17
+              }
+              strokeWidth={
+                1.8
+              }
+            />
+          </div>
+
           <div>
-            <span className={styles.kicker}>RESUMO DO MANDATO</span>
-            <h2>Entenda antes de se aprofundar</h2>
+            <span
+              className={
+                styles.kicker
+              }
+            >
+              RESUMO DO MANDATO
+            </span>
+
+            <h2>
+              Entenda antes de se aprofundar
+            </h2>
           </div>
         </div>
 
-        {data && (
-          <span className={styles.mode}>
-            {data.mode === "ai" ? "Resumo por IA · Groq" : "Resumo automático"}
+        {hasSummary && (
+          <span
+            className={
+              styles.mode
+            }
+          >
+            Dados oficiais
           </span>
         )}
       </div>
 
-      {loading ? (
-        <div className={styles.loading}>
-          <LoaderCircle size={17} className={styles.spin} />
-          <div>
-            <strong>Organizando os registros oficiais…</strong>
-            <span>Projetos, votações, discursos e despesas dos quatro anos.</span>
-          </div>
+      {!hasSummary &&
+      loading ? (
+        <div
+          className={
+            styles.preparing
+          }
+          role="status"
+          aria-live="polite"
+        >
+          <strong
+            className={
+              styles.preparingShimmer
+            }
+            data-text={
+              status
+            }
+          >
+            {
+              status
+            }
+          </strong>
+
+          <SourceProgress
+            sources={
+              sources
+            }
+          />
         </div>
-      ) : error ? (
-        <div className={styles.error}>{error}</div>
-      ) : data ? (
+      ) : hasSummary ? (
         <>
-          <div className={styles.overviewWrap} aria-live="polite" aria-atomic="false">
-            <p className={styles.overview}>
-              {progressiveOverview.text}
-              {data.mode === "ai" && !progressiveOverview.done && (
-                <span className={styles.typingCursor} aria-hidden="true" />
+          <div
+            className={
+              styles.overviewWrap
+            }
+            aria-live="polite"
+          >
+            <p
+              className={
+                styles.overview
+              }
+            >
+              {
+                summary
+              }
+              {loading && (
+                <span
+                  className={
+                    styles.typingCursor
+                  }
+                  aria-hidden="true"
+                />
               )}
             </p>
-            {data.mode === "ai" && !progressiveOverview.done && (
-              <span className={styles.writingLabel}>IA organizando o resumo…</span>
-            )}
           </div>
 
-          <div className={`${styles.quickFacts} ${summaryReady ? styles.reveal : styles.revealPending}`}>
-            <div><strong>{data.coverage.projects.toLocaleString("pt-BR")}</strong><span>projetos</span></div>
-            <div><strong>{data.coverage.projectsBecameRule.toLocaleString("pt-BR")}</strong><span>viraram lei ou norma*</span></div>
-            <div><strong>{data.coverage.votes.toLocaleString("pt-BR")}</strong><span>votos nominais</span></div>
-            <div><strong>{data.coverage.speeches.toLocaleString("pt-BR")}</strong><span>discursos</span></div>
-          </div>
-
-          <button
-            type="button"
-            className={`${styles.expandButton} ${summaryReady ? styles.reveal : styles.revealPending}`}
-            onClick={() => setExpanded((value) => !value)}
-            aria-expanded={expanded}
-            disabled={!summaryReady}
-          >
-            {expanded ? "Fechar resumo detalhado" : "Ver resumo detalhado"}
-            <ChevronDown size={14} className={expanded ? styles.chevronOpen : ""} />
-          </button>
-
-          {expanded && summaryReady && (
-            <div className={detailsClassName}>
-              <section>
-                <span className={styles.sectionLabel}>PONTOS DO PERÍODO</span>
-                <ul className={styles.highlights}>
-                  {data.highlights.map((item, index) => (
-                    <li
-                      key={`${item}-${index}`}
-                      className={styles.detailItem}
-                      style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}
-                    >
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-
-              {!!data.frequentTopics.length && (
-                <section>
-                  <span className={styles.sectionLabel}>TEMAS FREQUENTES NOS REGISTROS ANALISADOS</span>
-                  <div className={styles.topics}>
-                    {data.frequentTopics.map((topic, index) => (
-                      <span
-                        key={topic}
-                        className={styles.detailItem}
-                        style={{ animationDelay: `${Math.min(index, 10) * 45}ms` }}
-                      >
-                        {topic}
-                      </span>
-                    ))}
-                  </div>
-                </section>
-              )}
-
-              <section className={styles.methodology}>
-                <div className={styles.methodologyTitle}><Info size={13} /><strong>Como este resumo foi feito</strong></div>
-                <p>
-                  O BRASIVO organiza registros oficiais e usa IA via Groq apenas para resumir o conteúdo. O resumo não dá nota, não classifica desempenho e não recomenda apoio ou voto.
-                </p>
-                <p>
-                  * “Viraram lei ou norma” segue a situação oficial encontrada nos registros consultados. Participação como autor pode incluir parlamentares que assinaram a proposta.
-                </p>
-
-                {!!data.limitations.length && (
-                  <ul className={styles.limitations}>
-                    {data.limitations.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}
-                  </ul>
-                )}
-
-                <div className={styles.sources}>
-                  {data.sources.map((source) => (
-                    <a key={source.url} href={source.url} target="_blank" rel="noreferrer">
-                      {source.label} <ExternalLink size={10} />
-                    </a>
-                  ))}
-                </div>
-              </section>
+          {loading && (
+            <div
+              className={
+                styles.liveStatus
+              }
+            >
+              <span
+                className={
+                  styles.livePulse
+                }
+              />
+              <span>
+                {
+                  status
+                }
+              </span>
             </div>
           )}
 
-          <footer className={`${styles.footer} ${summaryReady ? styles.reveal : styles.revealPending}`}>
-            <span>{data.period.startYear}–{data.period.endYear}</span>
-            <span>Atualizado em {formatDate(data.generatedAt)}</span>
-            {data.mode === "automatic" && (
-              <span>Groq não configurada ou indisponível; exibindo síntese factual automática.</span>
+          {stale && (
+            <div
+              className={
+                styles.staleNotice
+              }
+            >
+              Mostrando a última versão enquanto os registros são atualizados.
+            </div>
+          )}
+
+          {loading && (
+            <SourceProgress
+              sources={
+                sources
+              }
+              compact
+            />
+          )}
+
+          <div
+            className={
+              styles.methodology
+            }
+          >
+            <div
+              className={
+                styles.methodologyTitle
+              }
+            >
+              <Info
+                size={
+                  13
+                }
+              />
+              <strong>
+                Como este resumo é preparado
+              </strong>
+            </div>
+
+            <p>
+              O BRASIVO usa somente dados confirmados nas fontes oficiais. Campos ausentes, falhas e timeouts não são transformados em zero. A síntese organiza esses registros sem dar nota, classificar desempenho ou recomendar apoio ou voto.
+            </p>
+
+            <div
+              className={
+                styles.sourcesLinks
+              }
+            >
+              <a
+                href="https://dadosabertos.camara.leg.br/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Dados Abertos da Câmara{" "}
+                <ExternalLink
+                  size={
+                    10
+                  }
+                />
+              </a>
+
+              <a
+                href="https://www.camara.leg.br/cota-parlamentar/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                CEAP{" "}
+                <ExternalLink
+                  size={
+                    10
+                  }
+                />
+              </a>
+            </div>
+          </div>
+
+          <footer
+            className={
+              styles.footer
+            }
+          >
+            <span>
+              {
+                loading
+                  ? "Atualizando…"
+                  : "Atualizado"
+              }
+            </span>
+
+            {generatedAt && (
+              <span>
+                {new Intl.DateTimeFormat(
+                  "pt-BR",
+                  {
+                    day:
+                      "2-digit",
+                    month:
+                      "2-digit",
+                    year:
+                      "numeric",
+                    hour:
+                      "2-digit",
+                    minute:
+                      "2-digit",
+                  },
+                ).format(
+                  new Date(
+                    generatedAt,
+                  ),
+                )}
+              </span>
             )}
           </footer>
         </>
+      ) : error ? (
+        <div
+          className={
+            styles.error
+          }
+        >
+          {
+            error
+          }
+        </div>
       ) : null}
     </section>
+  );
+}
+
+function SourceProgress({
+  sources,
+  compact = false,
+}: {
+  sources: Record<
+    keyof typeof SOURCE_LABELS,
+    SourceState
+  >;
+  compact?: boolean;
+}) {
+  const active =
+    (
+      Object.entries(
+        sources,
+      ) as Array<
+        [
+          keyof typeof SOURCE_LABELS,
+          SourceState,
+        ]
+      >
+    ).filter(
+      (
+        [
+          _key,
+          value,
+        ],
+      ) =>
+        value.status !==
+        "idle",
+    );
+
+  if (
+    active.length ===
+    0
+  ) {
+    return null;
+  }
+
+  return (
+    <div
+      className={
+        compact
+          ? styles.sourceProgressCompact
+          : styles.sourceProgress
+      }
+    >
+      {active.map(
+        (
+          [
+            key,
+            value,
+          ],
+        ) => (
+          <div
+            key={
+              key
+            }
+            className={
+              styles.sourceProgressItem
+            }
+          >
+            <span
+              className={`${styles.sourceDot} ${styles[`source_${value.status}`]}`}
+            />
+            <span>
+              {
+                SOURCE_LABELS[
+                  key
+                ]
+              }
+            </span>
+          </div>
+        ),
+      )}
+    </div>
   );
 }
