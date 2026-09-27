@@ -18,6 +18,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
+import ExpenseRestitutionPanel from "@/components/mandates/ExpenseRestitutionPanel";
+import ExpenseReturnSummaryCard from "@/components/mandates/ExpenseReturnSummaryCard";
+import "@/components/mandates/expense-restitution-v36-4.css";
+import ExpenseRecentProgressive from "@/components/mandates/ExpenseRecentProgressive";
+import "@/components/mandates/expense-recent-v36-3.css";
+import "@/components/mandates/expense-restitution-v36.css";
 import type { MandateExpenseSummary } from "@/types/chamber";
 import MandateActivityPanel from "@/components/mandate/MandateActivityPanel";
 import MandateProjectsPanel from "@/components/mandate/MandateProjectsPanel";
@@ -232,13 +238,88 @@ export default function MandateProfile({ id }: { id: string }) {
                 <div className="expense-context"><Info size={14}/><span>Valores da Cota para o Exercício da Atividade Parlamentar (CEAP). O total usa o valor líquido registrado pela Câmara e não representa todos os custos relacionados ao mandato.</span></div>
                 {expensesLoading ? <div className="expense-loading"><LoaderCircle className="spin"/>Consultando despesas oficiais…</div> : expenses ? (
                   <>
-                    <div className="expense-summary-grid">
-                      <div><small>VALOR OFICIAL REGISTRADO</small><strong>{expenses.status === "available" ? money(expenses.totalNet) : "Indisponível"}</strong><span>{expenseYear}</span></div>
+                    <div className="expense-summary-grid has-return-card">
+                      <div><small>VALOR USADO DA COTA</small><strong>{expenses.status === "available" ? money(expenses.totalNet) : "Indisponível"}</strong><span>{expenseYear}</span></div>
                       <div><small>REGISTROS DE DESPESA</small><strong>{expenses.status === "available" ? expenses.totalDocuments.toLocaleString("pt-BR") : "—"}</strong><span>{expenses.sourceKind === "dataset" ? "lançamentos do arquivo oficial CEAP" : "documentos/lançamentos retornados"}</span></div>
+                      <ExpenseReturnSummaryCard
+                        restitution={
+                          (
+                            expenses as unknown as {
+                              restitution?: {
+                                total: number;
+                                count: number;
+                              };
+                            }
+                          ).restitution
+                        }
+                        year={expenseYear}
+                      />
                     </div>
                     {expenses.note && <div className="expense-context"><Info size={14}/><span>{expenses.note}</span>{expenses.sourceUrl && <a href={expenses.sourceUrl} target="_blank" rel="noreferrer">Fonte oficial <ExternalLink size={11}/></a>}</div>}
-                    <section className="expense-section"><div className="expense-section-title"><h3>Por categoria</h3><span>valor líquido</span></div>
-                      {expenses.categories.length ? <div className="expense-categories">{expenses.categories.slice(0,8).map((category) => { const pct = expenses.totalNet > 0 ? Math.max(2, (category.value / expenses.totalNet) * 100) : 0; return <div className="expense-category" key={category.name}><div><span>{category.name}</span><strong>{money(category.value)}</strong></div><div className="expense-bar"><i style={{width:`${Math.min(100,pct)}%`}}/></div></div>; })}</div> : <div className="profile-empty">Nenhuma despesa foi retornada para este período.</div>}
+                    <ExpenseRestitutionPanel
+                        restitution={
+                          (
+                            expenses as unknown as {
+                              restitution?: {
+                                total: number;
+                                count: number;
+                                recent: Array<{
+                                  id: string;
+                                  value: number;
+                                  paidAt: string | null;
+                                  officialDocumentId: string | null;
+                                  documentNumber: string | null;
+                                  category: string | null;
+                                  supplier: string | null;
+                                  sourceUrl: string;
+                                }>;
+                              };
+                            }
+                          ).restitution
+                        }
+                      />
+                    <section className="expense-section">
+                      <div className="expense-section-title">
+                        <h3>Por categoria</h3>
+                        <span>valor líquido</span>
+                      </div>
+                      {expenses.categories.length ? (
+                        <div className="expense-categories">
+                          {expenses.categories.map((category) => {
+                            const pct =
+                              expenses.totalNet > 0
+                                ? Math.max(
+                                    2,
+                                    (category.value / expenses.totalNet) * 100,
+                                  )
+                                : 0;
+
+                            return (
+                              <div
+                                className="expense-category"
+                                key={category.name}
+                              >
+                                <div>
+                                  <span>{category.name}</span>
+                                  <strong>{money(category.value)}</strong>
+                                </div>
+
+                                <div className="expense-bar">
+                                  <i
+                                    style={{
+                                      width: `${Math.min(100, pct)}%`,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="profile-empty">
+                          Nenhuma despesa foi retornada para este período.
+                        </div>
+                      )}
                     </section>
                     <section className="expense-section"><div className="expense-section-title"><h3>Por mês</h3><span>{expenseYear}</span></div>{(() => {
                       const max = Math.max(...expenses.months.map((item) => Math.abs(item.value)), 1);
@@ -254,8 +335,16 @@ export default function MandateProfile({ id }: { id: string }) {
                         return <div className="expense-month-item" key={month.month} tabIndex={0}><div className="expense-month-tooltip"><strong>{monthNames[month.month-1]} · {money(month.value)}</strong><span>{variationLabel}</span></div><div className="expense-month-track"><i style={{height:`${month.value ? Math.max(3,Math.abs(month.value)/max*100) : 0}%`}}/></div><span>{monthNames[month.month-1]}</span><small>{month.value ? money(month.value) : "—"}</small></div>;
                       })}</div></div>;
                     })()}</section>
-                    <section className="expense-section"><div className="expense-section-title"><h3>Registros recentes</h3><span>fonte oficial</span></div>
-                      {expenses.recent.length ? <div className="expense-list">{expenses.recent.map((expense) => <div className="expense-row" key={expense.id}><div className="expense-row-icon"><FileText size={15}/></div><div className="expense-row-main"><span>{expense.issuedAt ? new Date(`${expense.issuedAt}T12:00:00`).toLocaleDateString("pt-BR") : "Data não informada"}</span><strong>{expense.category}</strong><p>{expense.supplier || "Fornecedor não informado"}</p></div><div className="expense-row-value"><small>VALOR LÍQUIDO</small><strong>{money(expense.netValue)}</strong>{expense.documentUrl && <a href={expense.documentUrl} target="_blank" rel="noreferrer">Comprovante <ExternalLink size={11}/></a>}</div></div>)}</div> : <div className="profile-empty">Nenhum registro recente encontrado.</div>}
+                    <section className="expense-section">
+                      <div className="expense-section-title">
+                        <h3>Registros recentes</h3>
+                        <span>fonte oficial</span>
+                      </div>
+
+                      <ExpenseRecentProgressive
+                        recent={expenses.recent}
+                        year={expenseYear}
+                      />
                     </section>
                   </>
                 ) : <div className="profile-empty">Não foi possível consultar as despesas deste período. Nenhum valor zero será presumido sem confirmação oficial.</div>}

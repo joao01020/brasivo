@@ -1,0 +1,43 @@
+
+.expense-restitution-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 16px;
+  border: 1px solid rgba(73, 133, 87, 0.18);
+  border-radius: 14px;
+  background: rgba(74, 126, 84, 0.055);
+  margin-bottom: 14px;
+}
+
+.expense-restitution-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: rgba(74, 126, 84, 0.11);
+}
+
+.expense-restitution-summary > div:last-child {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.expense-restitution-summary small {
+  font-size: 10px;
+  letter-spacing: .08em;
+  opacity: .68;
+}
+
+.expense-restitution-summary strong {
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.expense-restitution-summary span {
+  font-size: 11px;
+  opacity: .72;
+}
