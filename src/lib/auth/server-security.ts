@@ -2,6 +2,10 @@ import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
+function normalizeAalLevel(value: unknown): "aal1" | "aal2" | null {
+  return value === "aal1" || value === "aal2" ? value : null;
+}
+
 type SecurityContext = {
   userId: string;
   email: string | null;
@@ -65,11 +69,13 @@ export async function getServerSecurityContext(): Promise<SecurityContext | null
     return null;
   }
 
-  const [{ data: factors, error: factorsError }, { data: aal, error: aalError }] =
-    await Promise.all([
-      supabase.auth.mfa.listFactors(),
-      supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
-    ]);
+  const [
+    { data: factors, error: factorsError },
+    { data: aal, error: aalError },
+  ] = await Promise.all([
+    supabase.auth.mfa.listFactors(),
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+  ]);
 
   if (factorsError) {
     throw factorsError;
@@ -89,16 +95,13 @@ export async function getServerSecurityContext(): Promise<SecurityContext | null
   return {
     userId: user.id,
     email: user.email ?? null,
-    currentLevel: aal?.currentLevel ?? null,
-    nextLevel: aal?.nextLevel ?? null,
+    currentLevel: normalizeAalLevel(aal?.currentLevel),
+    nextLevel: normalizeAalLevel(aal?.nextLevel),
     verifiedTotpFactors,
   };
 }
 
-export function securityJson(
-  body: Record<string, unknown>,
-  status = 200,
-) {
+export function securityJson(body: Record<string, unknown>, status = 200) {
   return NextResponse.json(body, {
     status,
     headers: {

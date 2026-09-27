@@ -16,9 +16,7 @@ import { useEffect, useState } from "react";
 
 import DashboardUserAvatar from "@/components/account/DashboardUserAvatar";
 import { createClient } from "@/lib/supabase/client";
-import DashboardHeader, {
-  DashboardNotification,
-} from "./DashboardHeader";
+import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
 
 type ExpenseTrend = {
   current: number;
@@ -132,14 +130,10 @@ function Trend({
         >
           <Info size={9} />
 
-          <span
-            className="expense-trend-tooltip"
-            role="tooltip"
-          >
-            Variação das despesas CEAP registradas nos últimos
-            3 meses completos em comparação com os 3 meses
-            completos anteriores. A variação não representa
-            avaliação de desempenho.
+          <span className="expense-trend-tooltip" role="tooltip">
+            Variação das despesas CEAP registradas nos últimos 3 meses completos
+            em comparação com os 3 meses completos anteriores. A variação não
+            representa avaliação de desempenho.
           </span>
         </span>
       </div>
@@ -157,18 +151,12 @@ function Trend({
         <span>{moneyCompact(trend.current)}</span>
       </div>
 
-      <div
-        className="expense-sparkline"
-        aria-hidden="true"
-      >
+      <div className="expense-sparkline" aria-hidden="true">
         {trend.monthlyValues.map((value, index) => (
           <i
             key={index}
             style={{
-              height: `${Math.max(
-                3,
-                (value / max) * 18,
-              )}px`,
+              height: `${Math.max(3, (value / max) * 18)}px`,
             }}
           />
         ))}
@@ -243,10 +231,7 @@ function DashboardSkeleton() {
                       <span className="dashboard-skeleton dashboard-skeleton-expense-meta" />
                     </div>
 
-                    <div
-                      className="dashboard-loading-bars"
-                      aria-hidden="true"
-                    >
+                    <div className="dashboard-loading-bars" aria-hidden="true">
                       <i />
                       <i />
                       <i />
@@ -285,9 +270,7 @@ function DashboardSkeleton() {
   );
 }
 
-export default function DashboardShell(
-  props: Props = {},
-) {
+export default function DashboardShell(props: Props = {}) {
   const router = useRouter();
 
   /*
@@ -299,29 +282,19 @@ export default function DashboardShell(
    * "Rendered more hooks than during the previous render"
    */
 
-  const [displayName, setDisplayName] = useState(
-    props.displayName ?? "",
+  const [displayName, setDisplayName] = useState(props.displayName ?? "");
+
+  const [email, setEmail] = useState(props.email ?? "");
+
+  const [notifications, setNotifications] = useState<DashboardNotification[]>(
+    props.notifications ?? [],
   );
 
-  const [email, setEmail] = useState(
-    props.email ?? "",
-  );
-
-  const [notifications, setNotifications] = useState<
-    DashboardNotification[]
-  >(props.notifications ?? []);
-
-  const [
-    unreadNotifications,
-    setUnreadNotifications,
-  ] = useState(
+  const [unreadNotifications, setUnreadNotifications] = useState(
     props.unreadNotifications ?? 0,
   );
 
-  const [
-    followedMandates,
-    setFollowedMandates,
-  ] = useState<Followed[]>(
+  const [followedMandates, setFollowedMandates] = useState<Followed[]>(
     props.followedMandates ?? [],
   );
 
@@ -330,9 +303,7 @@ export default function DashboardShell(
    *
    * perfil + notificações + lista de mandatos.
    */
-  const [baseReady, setBaseReady] = useState(
-    Boolean(props.displayName),
-  );
+  const [baseReady, setBaseReady] = useState(Boolean(props.displayName));
 
   /*
    * profileDataReady:
@@ -341,10 +312,7 @@ export default function DashboardShell(
    *
    * O dashboard NÃO será exibido antes disso.
    */
-  const [
-    profileDataReady,
-    setProfileDataReady,
-  ] = useState(false);
+  const [profileDataReady, setProfileDataReady] = useState(false);
 
   /*
    * ==========================================================
@@ -373,14 +341,11 @@ export default function DashboardShell(
         const user = session?.user;
 
         if (!user) {
-          router.replace(
-            "/login?next=/dashboard",
-          );
+          router.replace("/login?next=/dashboard");
           return;
         }
 
-        const userEmail =
-          user.email ?? "";
+        const userEmail = user.email ?? "";
 
         const [
           { data: profile },
@@ -434,8 +399,7 @@ export default function DashboardShell(
         if (!mounted) return;
 
         const metadataName =
-          typeof user.user_metadata?.name ===
-          "string"
+          typeof user.user_metadata?.name === "string"
             ? user.user_metadata.name
             : "";
 
@@ -445,39 +409,49 @@ export default function DashboardShell(
           userEmail.split("@")[0] ||
           "você";
 
-        const mappedNotifications =
-          (notificationRows ?? []).map(
-            (row) => ({
-              id: row.id,
-              title: row.title,
-              message: row.message,
-              sourceUrl: row.source_url,
-              occurredAt: row.occurred_at,
-              createdAt: row.created_at,
-              readAt: row.read_at,
-            }),
-          );
+        const mappedNotifications = (
+            (notificationRows ?? []) as unknown as Array<{
+              id: string;
+              title: string;
+              message: string;
+              source_url: string | null;
+              occurred_at: string | null;
+              created_at: string;
+              read_at: string | null;
+            }>
+          ).map((row) => ({
+          id: row.id,
+          title: row.title,
+          message: row.message,
+          sourceUrl: row.source_url,
+          occurredAt: row.occurred_at,
+          createdAt: row.created_at,
+          readAt: row.read_at,
+        }));
 
-        const base =
-          (followedRows ?? []).map(
-            (row) => ({
-              ...row,
-              photoUrl: null,
-              expenseTrend: null,
-            }),
-          ) as Followed[];
+        const base = (
+            (followedRows ?? []) as unknown as Array<{
+              id: string;
+              representative_external_id: string | number;
+              representative_source: string;
+              representative_name: string;
+              representative_office: string | null;
+              representative_state: string | null;
+              created_at: string;
+            }>
+          ).map((row) => ({
+          ...row,
+          photoUrl: null,
+          expenseTrend: null,
+        })) as Followed[];
 
         setEmail(userEmail);
         setDisplayName(resolvedName);
 
-        setNotifications(
-          mappedNotifications,
-        );
+        setNotifications(mappedNotifications);
 
         setUnreadNotifications(
-          mappedNotifications.filter(
-            (item) => !item.readAt,
-          ).length,
+          mappedNotifications.filter((item) => !item.readAt).length,
         );
 
         setFollowedMandates(base);
@@ -541,11 +515,9 @@ export default function DashboardShell(
        * snapshot evita que cada setState deste effect
        * provoque um novo ciclo de enriquecimento.
        */
-      const base = followedMandates.map(
-        (item) => ({
-          ...item,
-        }),
-      );
+      const base = followedMandates.map((item) => ({
+        ...item,
+      }));
 
       /*
        * ------------------------------------------------------
@@ -554,62 +526,37 @@ export default function DashboardShell(
        */
 
       try {
-        const response = await fetch(
-          "/api/representatives",
-          {
-            cache: "no-store",
-          },
-        );
+        const response = await fetch("/api/representatives", {
+          cache: "no-store",
+        });
 
         if (response.ok) {
-          const payload =
-            await response.json();
+          const payload = await response.json();
 
-          if (
-            mounted &&
-            Array.isArray(
-              payload.representatives,
-            )
-          ) {
-            const photos = new Map<
-              string,
-              string | null
-            >(
+          if (mounted && Array.isArray(payload.representatives)) {
+            const photos = new Map<string, string | null>(
               payload.representatives.map(
                 (representative: {
                   id: string | number;
                   photoUrl: string | null;
-                }) => [
-                  String(
-                    representative.id,
-                  ),
-                  representative.photoUrl,
-                ],
+                }) => [String(representative.id), representative.photoUrl],
               ),
             );
 
-            setFollowedMandates(
-              (current) =>
-                current.map((item) => ({
-                  ...item,
-                  photoUrl:
-                    item.representative_source ===
-                    "camara"
-                      ? photos.get(
-                          String(
-                            item.representative_external_id,
-                          ),
-                        ) ?? null
-                      : null,
-                })),
+            setFollowedMandates((current) =>
+              current.map((item) => ({
+                ...item,
+                photoUrl:
+                  item.representative_source === "camara"
+                    ? (photos.get(String(item.representative_external_id)) ??
+                      null)
+                    : null,
+              })),
             );
           }
         }
       } catch (error) {
-        console.warn(
-          "[BRASIVO dashboard] Fotos indisponíveis:",
-          error,
-        );
+        console.warn("[BRASIVO dashboard] Fotos indisponíveis:", error);
       }
 
       /*
@@ -620,32 +567,16 @@ export default function DashboardShell(
 
       const now = new Date();
 
-      const monthRefs = Array.from(
-        { length: 6 },
-        (_, index) => {
-          const date = new Date(
-            now.getFullYear(),
-            now.getMonth() -
-              1 -
-              index,
-            1,
-          );
+      const monthRefs = Array.from({ length: 6 }, (_, index) => {
+        const date = new Date(now.getFullYear(), now.getMonth() - 1 - index, 1);
 
-          return {
-            year: date.getFullYear(),
-            month:
-              date.getMonth() + 1,
-          };
-        },
-      ).reverse();
+        return {
+          year: date.getFullYear(),
+          month: date.getMonth() + 1,
+        };
+      }).reverse();
 
-      const years = [
-        ...new Set(
-          monthRefs.map(
-            (item) => item.year,
-          ),
-        ),
-      ];
+      const years = [...new Set(monthRefs.map((item) => item.year))];
 
       /*
        * Fazemos os mandatos um por vez.
@@ -656,132 +587,75 @@ export default function DashboardShell(
       for (const item of base) {
         if (!mounted) return;
 
-        if (
-          item.representative_source !==
-          "camara"
-        ) {
+        if (item.representative_source !== "camara") {
           continue;
         }
 
         try {
-          const responses =
-            await Promise.all(
-              years.map((year) =>
-                fetch(
-                  `/api/mandates/${item.representative_external_id}/expenses?year=${year}`,
-                  {
-                    cache: "no-store",
-                  },
-                ),
+          const responses = await Promise.all(
+            years.map((year) =>
+              fetch(
+                `/api/mandates/${item.representative_external_id}/expenses?year=${year}`,
+                {
+                  cache: "no-store",
+                },
               ),
-            );
+            ),
+          );
 
-          if (
-            responses.some(
-              (response) =>
-                !response.ok,
-            )
-          ) {
+          if (responses.some((response) => !response.ok)) {
             continue;
           }
 
-          const summaries =
-            await Promise.all(
-              responses.map(
-                (response) =>
-                  response.json(),
-              ),
-            );
+          const summaries = await Promise.all(
+            responses.map((response) => response.json()),
+          );
 
-          if (
-            summaries.some(
-              (summary) =>
-                summary.status !==
-                "available",
-            )
-          ) {
+          if (summaries.some((summary) => summary.status !== "available")) {
             continue;
           }
 
           const byYear = new Map(
-            summaries.map(
-              (summary) => [
-                summary.year,
-                summary,
-              ],
-            ),
+            summaries.map((summary) => [summary.year, summary]),
           );
 
-          const monthlyValues =
-            monthRefs.map(
-              ({
-                year,
-                month,
-              }) =>
-                byYear
-                  .get(year)
-                  ?.months?.find(
-                    (entry: {
-                      month: number;
-                      value: number;
-                    }) =>
-                      entry.month ===
-                      month,
-                  )?.value ?? 0,
-            );
+          const monthlyValues = monthRefs.map(
+            ({ year, month }) =>
+              byYear
+                .get(year)
+                ?.months?.find(
+                  (entry: { month: number; value: number }) =>
+                    entry.month === month,
+                )?.value ?? 0,
+          );
 
-          const previous =
-            monthlyValues
-              .slice(0, 3)
-              .reduce(
-                (
-                  sum,
-                  value,
-                ) =>
-                  sum + value,
-                0,
-              );
+          const previous = monthlyValues
+            .slice(0, 3)
+            .reduce((sum, value) => sum + value, 0);
 
-          const current =
-            monthlyValues
-              .slice(3)
-              .reduce(
-                (
-                  sum,
-                  value,
-                ) =>
-                  sum + value,
-                0,
-              );
+          const current = monthlyValues
+            .slice(3)
+            .reduce((sum, value) => sum + value, 0);
 
-          const expenseTrend: ExpenseTrend =
-            {
-              current,
-              previous,
-              percentChange:
-                previous > 0
-                  ? ((current -
-                      previous) /
-                      previous) *
-                    100
-                  : null,
-              monthlyValues,
-            };
+          const expenseTrend: ExpenseTrend = {
+            current,
+            previous,
+            percentChange:
+              previous > 0 ? ((current - previous) / previous) * 100 : null,
+            monthlyValues,
+          };
 
           if (!mounted) return;
 
-          setFollowedMandates(
-            (currentItems) =>
-              currentItems.map(
-                (currentItem) =>
-                  currentItem.id ===
-                  item.id
-                    ? {
-                        ...currentItem,
-                        expenseTrend,
-                      }
-                    : currentItem,
-              ),
+          setFollowedMandates((currentItems) =>
+            currentItems.map((currentItem) =>
+              currentItem.id === item.id
+                ? {
+                    ...currentItem,
+                    expenseTrend,
+                  }
+                : currentItem,
+            ),
           );
         } catch (error) {
           console.warn(
@@ -830,15 +704,9 @@ export default function DashboardShell(
    * ==========================================================
    */
 
-  const loading =
-    !baseReady ||
-    !profileDataReady;
+  const loading = !baseReady || !profileDataReady;
 
-  const firstName =
-    displayName
-      .trim()
-      .split(/\s+/)[0] ||
-    "você";
+  const firstName = displayName.trim().split(/\s+/)[0] || "você";
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -850,9 +718,7 @@ export default function DashboardShell(
         displayName={displayName}
         email={email}
         notifications={notifications}
-        unreadNotifications={
-          unreadNotifications
-        }
+        unreadNotifications={unreadNotifications}
       />
 
       <section className="dashboard-content">
@@ -861,28 +727,20 @@ export default function DashboardShell(
             <DashboardUserAvatar />
 
             <div>
-              <span className="dashboard-kicker">
-                PAINEL PESSOAL
-              </span>
+              <span className="dashboard-kicker">PAINEL PESSOAL</span>
 
-              <h1>
-                Olá, {firstName}.
-              </h1>
+              <h1>Olá, {firstName}.</h1>
 
               <p>
-                Observe mandatos e
-                concentre em um só lugar
-                as atualizações públicas
-                que você decidiu observar.
+                Observe mandatos e concentre em um só lugar as atualizações
+                públicas que você decidiu observar.
               </p>
             </div>
           </div>
 
           <div className="dashboard-status">
             <ShieldCheck size={14} />
-            <span>
-              Dados de fontes oficiais
-            </span>
+            <span>Dados de fontes oficiais</span>
           </div>
         </div>
 
@@ -892,154 +750,102 @@ export default function DashboardShell(
               <div className="panel-heading panel-heading-spread">
                 <div className="panel-heading-group">
                   <div className="panel-icon">
-                    <UserRound
-                      size={18}
-                    />
+                    <UserRound size={18} />
                   </div>
 
                   <div>
-                    <small>
-                      OBSERVAÇÃO
-                    </small>
+                    <small>OBSERVAÇÃO</small>
 
-                    <h2>
-                      Mandatos que você
-                      observa
-                    </h2>
+                    <h2>Mandatos que você observa</h2>
                   </div>
                 </div>
 
-                <Link
-                  className="panel-heading-link"
-                  href="/#map"
-                >
+                <Link className="panel-heading-link" href="/#map">
                   Explorar
-                  <ArrowRight
-                    size={14}
-                  />
+                  <ArrowRight size={14} />
                 </Link>
               </div>
 
               {followedMandates.length ? (
                 <div className="followed-list">
-                  {followedMandates.map(
-                    (item) => (
-                      <div
-                        className="followed-row"
-                        key={item.id}
-                        role="link"
-                        tabIndex={0}
-                        onClick={() =>
+                  {followedMandates.map((item) => (
+                    <div
+                      className="followed-row"
+                      key={item.id}
+                      role="link"
+                      tabIndex={0}
+                      onClick={() =>
+                        router.push(
+                          `/mandate/${item.representative_external_id}`,
+                        )
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+
                           router.push(
                             `/mandate/${item.representative_external_id}`,
+                          );
+                        }
+                      }}
+                    >
+                      <div className="followed-row-content">
+                        {item.photoUrl ? (
+                          <img
+                            className="followed-row-photo"
+                            src={item.photoUrl}
+                            alt=""
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <span
+                            className="followed-row-photo followed-row-photo-placeholder"
+                            aria-hidden="true"
+                          >
+                            <UserRound size={14} />
+                          </span>
+                        )}
+
+                        <div className="followed-row-copy">
+                          <small>
+                            {item.representative_office || "Mandato"}
+                          </small>
+
+                          <strong>{item.representative_name}</strong>
+
+                          <span>{item.representative_state || "BR"}</span>
+                        </div>
+                      </div>
+
+                      <Trend
+                        trend={item.expenseTrend}
+                        onOpen={() =>
+                          router.push(
+                            `/mandate/${item.representative_external_id}?tab=expenses`,
                           )
                         }
-                        onKeyDown={(
-                          event,
-                        ) => {
-                          if (
-                            event.key ===
-                              "Enter" ||
-                            event.key ===
-                              " "
-                          ) {
-                            event.preventDefault();
+                      />
 
-                            router.push(
-                              `/mandate/${item.representative_external_id}`,
-                            );
-                          }
-                        }}
-                      >
-                        <div className="followed-row-content">
-                          {item.photoUrl ? (
-                            <img
-                              className="followed-row-photo"
-                              src={
-                                item.photoUrl
-                              }
-                              alt=""
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <span
-                              className="followed-row-photo followed-row-photo-placeholder"
-                              aria-hidden="true"
-                            >
-                              <UserRound
-                                size={
-                                  14
-                                }
-                              />
-                            </span>
-                          )}
-
-                          <div className="followed-row-copy">
-                            <small>
-                              {item.representative_office ||
-                                "Mandato"}
-                            </small>
-
-                            <strong>
-                              {
-                                item.representative_name
-                              }
-                            </strong>
-
-                            <span>
-                              {item.representative_state ||
-                                "BR"}
-                            </span>
-                          </div>
-                        </div>
-
-                        <Trend
-                          trend={
-                            item.expenseTrend
-                          }
-                          onOpen={() =>
-                            router.push(
-                              `/mandate/${item.representative_external_id}?tab=expenses`,
-                            )
-                          }
-                        />
-
-                        <ArrowRight
-                          className="followed-row-arrow"
-                          size={15}
-                        />
-                      </div>
-                    ),
-                  )}
+                      <ArrowRight className="followed-row-arrow" size={15} />
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="dashboard-empty-state">
                   <div className="empty-orbit">
-                    <UserRound
-                      size={24}
-                    />
+                    <UserRound size={24} />
                   </div>
 
-                  <strong>
-                    Nenhum mandato
-                    observado
-                  </strong>
+                  <strong>Nenhum mandato observado</strong>
 
                   <p>
-                    Escolha mandatos para
-                    transformar este painel
-                    em uma visão pessoal da
-                    atividade pública.
+                    Escolha mandatos para transformar este painel em uma visão
+                    pessoal da atividade pública.
                   </p>
 
-                  <Link
-                    className="dashboard-primary-link"
-                    href="/#map"
-                  >
+                  <Link className="dashboard-primary-link" href="/#map">
                     Explorar o mapa
-                    <ArrowRight
-                      size={15}
-                    />
+                    <ArrowRight size={15} />
                   </Link>
                 </div>
               )}
@@ -1055,13 +861,9 @@ export default function DashboardShell(
                   </div>
 
                   <div>
-                    <small>
-                      LINHA DO TEMPO
-                    </small>
+                    <small>LINHA DO TEMPO</small>
 
-                    <h2>
-                      Atividade recente
-                    </h2>
+                    <h2>Atividade recente</h2>
                   </div>
                 </div>
 
@@ -1072,63 +874,34 @@ export default function DashboardShell(
 
               {notifications.length ? (
                 <div className="dashboard-feed">
-                  {notifications
-                    .slice(0, 8)
-                    .map(
-                      (
-                        notification,
-                      ) => (
-                        <div
-                          className="dashboard-feed-item"
-                          key={
-                            notification.id
-                          }
-                        >
-                          <i />
+                  {notifications.slice(0, 8).map((notification) => (
+                    <div className="dashboard-feed-item" key={notification.id}>
+                      <i />
 
-                          <div>
-                            <strong>
-                              {
-                                notification.title
-                              }
-                            </strong>
+                      <div>
+                        <strong>{notification.title}</strong>
 
-                            {notification.message && (
-                              <p>
-                                {
-                                  notification.message
-                                }
-                              </p>
-                            )}
+                        {notification.message && <p>{notification.message}</p>}
 
-                            <span>
-                              {new Date(
-                                notification.occurredAt ||
-                                  notification.createdAt,
-                              ).toLocaleDateString(
-                                "pt-BR",
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      ),
-                    )}
+                        <span>
+                          {new Date(
+                            notification.occurredAt || notification.createdAt,
+                          ).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="dashboard-activity-empty">
                   <span className="activity-empty-dot" />
 
                   <div>
-                    <strong>
-                      Nenhuma atividade para
-                      exibir
-                    </strong>
+                    <strong>Nenhuma atividade para exibir</strong>
 
                     <p>
-                      As atualizações dos
-                      mandatos observados serão
-                      organizadas aqui em ordem
-                      cronológica.
+                      As atualizações dos mandatos observados serão organizadas
+                      aqui em ordem cronológica.
                     </p>
                   </div>
                 </div>

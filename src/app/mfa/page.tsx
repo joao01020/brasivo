@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 
 import styles from "./mfa.module.css";
 
@@ -40,7 +40,7 @@ function normalizeCode(value: string) {
   return value.replace(/\D/g, "").slice(0, 6);
 }
 
-export default function MfaPage() {
+function MfaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -61,21 +61,16 @@ export default function MfaPage() {
 
     async function prepare() {
       try {
-        const response = await fetch(
-          "/api/account/security/mfa",
-          {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store",
-          },
-        );
+        const response = await fetch("/api/account/security/mfa", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
 
         if (!active) return;
 
         if (response.status === 401) {
-          router.replace(
-            `/login?next=${encodeURIComponent(next)}`,
-          );
+          router.replace(`/login?next=${encodeURIComponent(next)}`);
           return;
         }
 
@@ -125,21 +120,18 @@ export default function MfaPage() {
     setMessage(null);
 
     try {
-      const response = await fetch(
-        "/api/account/security/mfa",
-        {
-          method: "POST",
-          credentials: "same-origin",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action: "verify",
-            factorId,
-            code,
-          }),
+      const response = await fetch("/api/account/security/mfa", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
+        body: JSON.stringify({
+          action: "verify",
+          factorId,
+          code,
+        }),
+      });
 
       const data = await response.json().catch(() => ({}));
 
@@ -155,9 +147,7 @@ export default function MfaPage() {
       router.refresh();
     } catch (error) {
       setMessage(
-        error instanceof Error
-          ? error.message
-          : "Código inválido ou expirado.",
+        error instanceof Error ? error.message : "Código inválido ou expirado.",
       );
       setCode("");
     } finally {
@@ -170,7 +160,9 @@ export default function MfaPage() {
       <div className={styles.glow} aria-hidden="true" />
 
       <Link href="/" className={styles.brand}>
-        <span>BR</span><b>A</b><span>SIVO</span>
+        <span>BR</span>
+        <b>A</b>
+        <span>SIVO</span>
       </Link>
 
       <section className={styles.card}>
@@ -204,8 +196,7 @@ export default function MfaPage() {
                 >
                   {factors.map((factor, index) => (
                     <option value={factor.id} key={factor.id}>
-                      {factor.friendlyName ||
-                        `Autenticador ${index + 1}`}
+                      {factor.friendlyName || `Autenticador ${index + 1}`}
                     </option>
                   ))}
                 </select>
@@ -231,10 +222,7 @@ export default function MfaPage() {
               </div>
             </label>
 
-            <button
-              type="submit"
-              disabled={verifying || code.length !== 6}
-            >
+            <button type="submit" disabled={verifying || code.length !== 6}>
               {verifying ? (
                 <LoaderCircle className={styles.spin} size={15} />
               ) : (
@@ -255,5 +243,44 @@ export default function MfaPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+function MfaLoadingFallback() {
+  return (
+    <main className={styles.page}>
+      <div className={styles.glow} aria-hidden="true" />
+
+      <Link href="/" className={styles.brand}>
+        <span>BR</span>
+        <b>A</b>
+        <span>SIVO</span>
+      </Link>
+
+      <section className={styles.card}>
+        <div className={styles.icon}>
+          <ShieldCheck size={24} />
+        </div>
+
+        <span className={styles.kicker}>SEGURANÇA DA CONTA</span>
+
+        <h1>Confirme que é você</h1>
+
+        <p>Preparando a verificação de segurança da sua conta.</p>
+
+        <div className={styles.loading}>
+          <LoaderCircle className={styles.spin} size={17} />
+          Preparando verificação...
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default function MfaPage() {
+  return (
+    <Suspense fallback={<MfaLoadingFallback />}>
+      <MfaContent />
+    </Suspense>
   );
 }

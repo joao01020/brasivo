@@ -99,14 +99,11 @@ function projectsRetryDelay(response: Response, attempt: number) {
   }
 
   return (
-    PROJECTS_BASE_DELAY_MS * 2 ** attempt +
-    Math.floor(Math.random() * 300)
+    PROJECTS_BASE_DELAY_MS * 2 ** attempt + Math.floor(Math.random() * 300)
   );
 }
 
-async function runProjectsRequest<T>(
-  request: () => Promise<T>,
-): Promise<T> {
+async function runProjectsRequest<T>(request: () => Promise<T>): Promise<T> {
   let release!: () => void;
   const previous = projectsQueue;
 
@@ -130,12 +127,8 @@ async function runProjectsRequest<T>(
   }
 }
 
-async function getJson<T>(
-  urlOrPath: string,
-): Promise<Envelope<T>> {
-  const url = urlOrPath.startsWith("http")
-    ? urlOrPath
-    : `${API}${urlOrPath}`;
+async function getJson<T>(urlOrPath: string): Promise<Envelope<T>> {
+  const url = urlOrPath.startsWith("http") ? urlOrPath : `${API}${urlOrPath}`;
 
   const existing = projectsInFlight.get(url);
   if (existing) return existing as Promise<Envelope<T>>;
@@ -143,14 +136,8 @@ async function getJson<T>(
   const pending = (async () => {
     let lastStatus = 0;
 
-    for (
-      let attempt = 0;
-      attempt <= PROJECTS_MAX_RETRIES;
-      attempt += 1
-    ) {
-      const response = await runProjectsRequest(() =>
-        fetch(url, fetchOptions),
-      );
+    for (let attempt = 0; attempt <= PROJECTS_MAX_RETRIES; attempt += 1) {
+      const response = await runProjectsRequest(() => fetch(url, fetchOptions));
 
       lastStatus = response.status;
 
@@ -164,9 +151,7 @@ async function getJson<T>(
         response.status >= 500;
 
       if (!retryable || attempt === PROJECTS_MAX_RETRIES) {
-        throw new Error(
-          `Câmara API ${response.status}: ${url}`,
-        );
+        throw new Error(`Câmara API ${response.status}: ${url}`);
       }
 
       const waitMs = projectsRetryDelay(response, attempt);
@@ -178,15 +163,10 @@ async function getJson<T>(
       await projectsSleep(waitMs);
     }
 
-    throw new Error(
-      `Câmara API ${lastStatus || 429}: ${url}`,
-    );
+    throw new Error(`Câmara API ${lastStatus || 429}: ${url}`);
   })();
 
-  projectsInFlight.set(
-    url,
-    pending as Promise<Envelope<unknown>>,
-  );
+  projectsInFlight.set(url, pending as Promise<Envelope<unknown>>);
 
   try {
     return await pending;
@@ -201,14 +181,18 @@ async function getPaged<T>(
   maxPages = 8,
 ): Promise<T[]> {
   const output: T[] = [];
-  let nextUrl: string | null = buildUrl(path, { ...params, itens: 100, pagina: 1 });
+  let nextUrl: string | null = buildUrl(path, {
+    ...params,
+    itens: 100,
+    pagina: 1,
+  });
 
   for (let page = 0; page < maxPages && nextUrl; page += 1) {
-    const payload = await getJson<T[]>(nextUrl);
+    const payload: Envelope<T[]> = await getJson<T[]>(nextUrl);
     output.push(...(payload.dados ?? []));
     nextUrl =
       payload.links
-        ?.find((link) => link.rel === "next")
+        ?.find((link: ApiLink) => link.rel === "next")
         ?.href?.replace(/^http:/, "https:") ?? null;
   }
 
@@ -252,9 +236,14 @@ function simplifyStatus(value?: string | null): {
   label: string;
 } {
   const text = (value ?? "").trim();
-  const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const normalized = text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 
-  if (/transformad.*norma|convertid.*norma|promulgad|sancionad/.test(normalized)) {
+  if (
+    /transformad.*norma|convertid.*norma|promulgad|sancionad/.test(normalized)
+  ) {
     return { kind: "became_rule", label: "Virou lei ou outra norma" };
   }
 
@@ -279,7 +268,10 @@ function projectUrl(item: PropositionListItem) {
 async function getMandateInfo(deputyId: number) {
   const now = new Date();
   const fallbackStart = now.getFullYear() - 3;
-  const fallbackYears = Array.from({ length: 4 }, (_, index) => fallbackStart + index);
+  const fallbackYears = Array.from(
+    { length: 4 },
+    (_, index) => fallbackStart + index,
+  );
 
   try {
     const deputy = await getJson<DeputyDetail>(`/deputados/${deputyId}`);
@@ -294,7 +286,9 @@ async function getMandateInfo(deputyId: number) {
       };
     }
 
-    const legislature = await getJson<LegislatureDetail>(`/legislaturas/${legislatureId}`);
+    const legislature = await getJson<LegislatureDetail>(
+      `/legislaturas/${legislatureId}`,
+    );
     const startDate = legislature.dados?.dataInicio ?? null;
     const endDate = legislature.dados?.dataFim ?? null;
     const startYear = startDate ? Number(startDate.slice(0, 4)) : fallbackStart;
@@ -356,7 +350,8 @@ export async function getMandateProjectsSummary(
 
   const unique = new Map<number, PropositionListItem>();
   for (const item of listed) {
-    if (!item.id || !PROJECT_TYPES.has((item.siglaTipo ?? "").toUpperCase())) continue;
+    if (!item.id || !PROJECT_TYPES.has((item.siglaTipo ?? "").toUpperCase()))
+      continue;
     unique.set(item.id, item);
   }
 
@@ -365,12 +360,21 @@ export async function getMandateProjectsSummary(
   // Detalhamos todos os projetos normativos encontrados nos quatro anos.
   // Isso mantém o resumo do mandato completo, sem truncar silenciosamente
   // projetos mais antigos da legislatura.
-  const detailed = await withConcurrency(candidates, 3, async (item) => {
+  const detailed: PropositionDetail[] = await withConcurrency<
+    PropositionListItem,
+    PropositionDetail
+  >(candidates, 3, async (item): Promise<PropositionDetail> => {
     try {
-      const payload = await getJson<PropositionDetail>(`/proposicoes/${item.id}`);
+      const payload = await getJson<PropositionDetail>(
+        `/proposicoes/${item.id}`,
+      );
+
       return payload.dados ?? item;
     } catch {
-      warnings.push(`Não foi possível obter os detalhes de ${item.siglaTipo ?? "projeto"} ${item.numero ?? ""}/${item.ano ?? ""}.`);
+      warnings.push(
+        `Não foi possível obter os detalhes de ${item.siglaTipo ?? "projeto"} ${item.numero ?? ""}/${item.ano ?? ""}.`,
+      );
+
       return item;
     }
   });
@@ -394,7 +398,9 @@ export async function getMandateProjectsSummary(
         number,
         year,
         label: number && year ? `${type} ${number}/${year}` : type,
-        summary: (detail.ementa ?? "Descrição não informada pela fonte oficial.").trim(),
+        summary: (
+          detail.ementa ?? "Descrição não informada pela fonte oficial."
+        ).trim(),
         presentedAt: validDate(detail.dataApresentacao),
         officialStatus: status,
         simpleStatus: simplified.label,
@@ -402,17 +408,26 @@ export async function getMandateProjectsSummary(
         sourceUrl: projectUrl(detail),
       } satisfies MandateProjectItem;
     })
-    .filter((item) => Number.isInteger(item.year) && mandate.years.includes(item.year))
+    .filter(
+      (item) =>
+        Number.isInteger(item.year) && mandate.years.includes(item.year),
+    )
     .sort((a, b) => {
-      const dateA = a.presentedAt ? new Date(a.presentedAt).getTime() : Date.UTC(a.year, 0, 1);
-      const dateB = b.presentedAt ? new Date(b.presentedAt).getTime() : Date.UTC(b.year, 0, 1);
+      const dateA = a.presentedAt
+        ? new Date(a.presentedAt).getTime()
+        : Date.UTC(a.year, 0, 1);
+      const dateB = b.presentedAt
+        ? new Date(b.presentedAt).getTime()
+        : Date.UTC(b.year, 0, 1);
       return dateB - dateA;
     });
 
   const totals = {
     projects: items.length,
-    becameRule: items.filter((item) => item.statusKind === "became_rule").length,
-    inProgress: items.filter((item) => item.statusKind === "in_progress").length,
+    becameRule: items.filter((item) => item.statusKind === "became_rule")
+      .length,
+    inProgress: items.filter((item) => item.statusKind === "in_progress")
+      .length,
     archived: items.filter((item) => item.statusKind === "archived").length,
   };
 

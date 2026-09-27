@@ -24,7 +24,11 @@ type CamaraEvent = {
   descricaoTipo?: string;
   descricao?: string;
   localExterno?: string | null;
-  localCamara?: { nome?: string | null; predio?: string | null; sala?: string | null } | null;
+  localCamara?: {
+    nome?: string | null;
+    predio?: string | null;
+    sala?: string | null;
+  } | null;
   orgaos?: Array<{ id?: number; uri?: string; sigla?: string; nome?: string }>;
 };
 
@@ -72,10 +76,14 @@ const fetchOptions = {
   next: { revalidate: 60 * 60 * 6 },
 } as const;
 
-function buildUrl(path: string, params?: Record<string, string | number | undefined>) {
+function buildUrl(
+  path: string,
+  params?: Record<string, string | number | undefined>,
+) {
   const url = new URL(`${API}${path}`);
   for (const [key, value] of Object.entries(params ?? {})) {
-    if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
+    if (value !== undefined && value !== "")
+      url.searchParams.set(key, String(value));
   }
   return url.toString();
 }
@@ -84,7 +92,9 @@ async function getJson<T>(
   pathOrUrl: string,
   params?: Record<string, string | number | undefined>,
 ): Promise<ApiEnvelope<T>> {
-  const url = pathOrUrl.startsWith("http") ? pathOrUrl : buildUrl(pathOrUrl, params);
+  const url = pathOrUrl.startsWith("http")
+    ? pathOrUrl
+    : buildUrl(pathOrUrl, params);
   const response = await fetch(url, fetchOptions);
   if (!response.ok) throw new Error(`Câmara API ${response.status}: ${url}`);
   return response.json() as Promise<ApiEnvelope<T>>;
@@ -96,12 +106,19 @@ async function getPaged<T>(
   maxPages = 12,
 ): Promise<T[]> {
   const output: T[] = [];
-  let nextUrl: string | null = buildUrl(path, { ...params, itens: 100, pagina: 1 });
+  let nextUrl: string | null = buildUrl(path, {
+    ...params,
+    itens: 100,
+    pagina: 1,
+  });
 
   for (let page = 0; page < maxPages && nextUrl; page += 1) {
-    const payload = await getJson<T[]>(nextUrl);
+    const payload: ApiEnvelope<T[]> = await getJson<T[]>(nextUrl);
     output.push(...(payload.dados ?? []));
-    nextUrl = payload.links?.find((link) => link.rel === "next")?.href?.replace(/^http:/, "https:") ?? null;
+    nextUrl =
+      payload.links
+        ?.find((link) => link.rel === "next")
+        ?.href?.replace(/^http:/, "https:") ?? null;
   }
   return output;
 }
@@ -132,9 +149,13 @@ function isPlenarySession(event: CamaraEvent) {
   const isPlenaryOrgan = (event.orgaos ?? []).some((org) => {
     const sigla = (org.sigla ?? "").trim().toUpperCase();
     const nome = (org.nome ?? "").trim();
-    return Number(org.id) === PLENARY_ORGAN_ID || sigla === "PLEN" || /^plen[aá]rio$/i.test(nome);
+    return (
+      Number(org.id) === PLENARY_ORGAN_ID ||
+      sigla === "PLEN" ||
+      /^plen[aá]rio$/i.test(nome)
+    );
   });
-  return isSession(event) && (isPlenaryOrgan || !(event.orgaos?.length));
+  return isSession(event) && (isPlenaryOrgan || !event.orgaos?.length);
 }
 
 async function withConcurrency<T, R>(
@@ -151,35 +172,52 @@ async function withConcurrency<T, R>(
       results[index] = await worker(items[index]);
     }
   }
-  await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(items.length, 1)) }, () => runner()));
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, Math.max(items.length, 1)) },
+      () => runner(),
+    ),
+  );
   return results;
 }
 
 async function getDeputyEvents(deputyId: number, start: string, end: string) {
-  return getPaged<CamaraEvent>(`/deputados/${deputyId}/eventos`, {
-    dataInicio: start,
-    dataFim: end,
-    ordem: "DESC",
-    ordenarPor: "dataHoraInicio",
-  }, 20);
+  return getPaged<CamaraEvent>(
+    `/deputados/${deputyId}/eventos`,
+    {
+      dataInicio: start,
+      dataFim: end,
+      ordem: "DESC",
+      ordenarPor: "dataHoraInicio",
+    },
+    20,
+  );
 }
 
 async function getPlenaryEvents(start: string, end: string) {
-  return getPaged<CamaraEvent>(`/orgaos/${PLENARY_ORGAN_ID}/eventos`, {
-    dataInicio: start,
-    dataFim: end,
-    ordem: "ASC",
-    ordenarPor: "dataHoraInicio",
-  }, 20);
+  return getPaged<CamaraEvent>(
+    `/orgaos/${PLENARY_ORGAN_ID}/eventos`,
+    {
+      dataInicio: start,
+      dataFim: end,
+      ordem: "ASC",
+      ordenarPor: "dataHoraInicio",
+    },
+    20,
+  );
 }
 
 async function getSpeeches(deputyId: number, start: string, end: string) {
-  return getPaged<CamaraSpeech>(`/deputados/${deputyId}/discursos`, {
-    dataInicio: start,
-    dataFim: end,
-    ordem: "DESC",
-    ordenarPor: "dataHoraInicio",
-  }, 20);
+  return getPaged<CamaraSpeech>(
+    `/deputados/${deputyId}/discursos`,
+    {
+      dataInicio: start,
+      dataFim: end,
+      ordem: "DESC",
+      ordenarPor: "dataHoraInicio",
+    },
+    20,
+  );
 }
 
 async function getEventVotes(eventId: number) {
@@ -187,24 +225,40 @@ async function getEventVotes(eventId: number) {
 }
 
 async function getIndividualVotes(voteId: string) {
-  return getPaged<CamaraIndividualVote>(`/votacoes/${encodeURIComponent(voteId)}/votos`, {}, 8);
+  return getPaged<CamaraIndividualVote>(
+    `/votacoes/${encodeURIComponent(voteId)}/votos`,
+    {},
+    8,
+  );
 }
 
 async function getMandateInfo(deputyId: number): Promise<MandatePeriodInfo> {
   const fallbackYear = new Date().getFullYear();
-  const fallbackYears = Array.from({ length: 4 }, (_, index) => fallbackYear - 3 + index);
+  const fallbackYears = Array.from(
+    { length: 4 },
+    (_, index) => fallbackYear - 3 + index,
+  );
 
   try {
     const deputy = await getJson<DeputyDetail>(`/deputados/${deputyId}`);
     const legislatureId = Number(deputy.dados?.ultimoStatus?.idLegislatura);
     if (!Number.isInteger(legislatureId) || legislatureId <= 0) {
-      return { legislatureId: null, startDate: null, endDate: null, years: fallbackYears };
+      return {
+        legislatureId: null,
+        startDate: null,
+        endDate: null,
+        years: fallbackYears,
+      };
     }
 
-    const legislature = await getJson<LegislatureDetail>(`/legislaturas/${legislatureId}`);
+    const legislature = await getJson<LegislatureDetail>(
+      `/legislaturas/${legislatureId}`,
+    );
     const startDate = legislature.dados?.dataInicio ?? null;
     const endDate = legislature.dados?.dataFim ?? null;
-    const startYear = startDate ? Number(startDate.slice(0, 4)) : fallbackYear - 3;
+    const startYear = startDate
+      ? Number(startDate.slice(0, 4))
+      : fallbackYear - 3;
     const years = Array.from({ length: 4 }, (_, index) => startYear + index);
 
     return {
@@ -214,7 +268,12 @@ async function getMandateInfo(deputyId: number): Promise<MandatePeriodInfo> {
       years,
     };
   } catch {
-    return { legislatureId: null, startDate: null, endDate: null, years: fallbackYears };
+    return {
+      legislatureId: null,
+      startDate: null,
+      endDate: null,
+      years: fallbackYears,
+    };
   }
 }
 
@@ -233,7 +292,9 @@ function buildAttendance(
       .filter(isSession);
 
     if (!sessions.length) {
-      warnings.push("Nenhuma sessão plenária concluída foi encontrada para o período selecionado.");
+      warnings.push(
+        "Nenhuma sessão plenária concluída foi encontrada para o período selecionado.",
+      );
       return null;
     }
 
@@ -247,10 +308,14 @@ function buildAttendance(
         .map((event) => Number(event.id)),
     );
 
-    const present = sessions.filter((event) => attendedIds.has(Number(event.id))).length;
+    const present = sessions.filter((event) =>
+      attendedIds.has(Number(event.id)),
+    ).length;
     const totalConsidered = sessions.length;
     const absent = Math.max(0, totalConsidered - present);
-    const rate = totalConsidered ? Number(((present / totalConsidered) * 100).toFixed(1)) : null;
+    const rate = totalConsidered
+      ? Number(((present / totalConsidered) * 100).toFixed(1))
+      : null;
 
     return {
       scope: "plenary",
@@ -267,7 +332,9 @@ function buildAttendance(
       sourceUrl: SOURCE_URL,
     };
   } catch (error) {
-    warnings.push(`Presença indisponível no momento: ${error instanceof Error ? error.message : "falha de consulta"}.`);
+    warnings.push(
+      `Presença indisponível no momento: ${error instanceof Error ? error.message : "falha de consulta"}.`,
+    );
     return null;
   }
 }
@@ -292,45 +359,58 @@ async function buildVotes(
   });
 
   const unique = new Map<string, { event: CamaraEvent; vote: CamaraVote }>();
-  for (const pair of voteLists.flat()) if (pair.vote.id) unique.set(pair.vote.id, pair);
+  for (const pair of voteLists.flat())
+    if (pair.vote.id) unique.set(pair.vote.id, pair);
 
   const candidates = [...unique.values()].slice(0, 60);
-  const activities = await withConcurrency(candidates, 6, async ({ event, vote }) => {
-    if (!vote.id) return null;
-    try {
-      const votes = await getIndividualVotes(vote.id);
-      const individual = votes.find((item) => Number(item.deputado_?.id) === deputyId);
-      if (!individual) return null;
+  const activities = await withConcurrency(
+    candidates,
+    6,
+    async ({ event, vote }) => {
+      if (!vote.id) return null;
+      try {
+        const votes = await getIndividualVotes(vote.id);
+        const individual = votes.find(
+          (item) => Number(item.deputado_?.id) === deputyId,
+        );
+        if (!individual) return null;
 
-      const occurredAt =
-        normalizeDate(vote.dataHoraRegistro) ??
-        normalizeDate(event.dataHoraInicio) ??
-        new Date(`${vote.data ?? "1970-01-01"}T12:00:00-03:00`).toISOString();
+        const occurredAt =
+          normalizeDate(vote.dataHoraRegistro) ??
+          normalizeDate(event.dataHoraInicio) ??
+          new Date(`${vote.data ?? "1970-01-01"}T12:00:00-03:00`).toISOString();
 
-      return {
-        id: `camara-vote-${vote.id}-${deputyId}`,
-        type: "vote" as const,
-        title: "Votação nominal",
-        description: vote.descricao || event.descricao || "Voto registrado pela Câmara.",
-        occurredAt,
-        source: "camara" as const,
-        sourceLabel: SOURCE,
-        sourceUrl: vote.uri ?? event.uri ?? officialEventUrl(event.id),
-        sourceId: vote.id,
-        metadata: {
-          vote: individual.tipoVoto ?? "Não informado",
-          organ: vote.siglaOrgao ?? null,
-          eventId: event.id,
-          approval: vote.aprovacao ?? null,
-        },
-      } satisfies MandateActivity;
-    } catch {
-      return null;
-    }
-  });
+        return {
+          id: `camara-vote-${vote.id}-${deputyId}`,
+          type: "vote" as const,
+          title: "Votação nominal",
+          description:
+            vote.descricao || event.descricao || "Voto registrado pela Câmara.",
+          occurredAt,
+          source: "camara" as const,
+          sourceLabel: SOURCE,
+          sourceUrl: vote.uri ?? event.uri ?? officialEventUrl(event.id),
+          sourceId: vote.id,
+          metadata: {
+            vote: individual.tipoVoto ?? "Não informado",
+            organ: vote.siglaOrgao ?? null,
+            eventId: event.id,
+            approval: vote.aprovacao ?? null,
+          },
+        } satisfies MandateActivity;
+      } catch {
+        return null;
+      }
+    },
+  );
 
-  const valid = activities.filter((item): item is MandateActivity => item !== null);
-  if (!valid.length && candidates.length) warnings.push("Nenhum voto nominal individual pôde ser confirmado na janela consultada.");
+  const valid = activities.filter(
+    (item): item is NonNullable<typeof item> => item !== null,
+  );
+  if (!valid.length && candidates.length)
+    warnings.push(
+      "Nenhum voto nominal individual pôde ser confirmado na janela consultada.",
+    );
   return valid;
 }
 
@@ -339,12 +419,20 @@ function buildSpeechActivities(speeches: CamaraSpeech[]): MandateActivity[] {
     .map((speech, index) => {
       const occurredAt = normalizeDate(speech.dataHoraInicio);
       if (!occurredAt) return null;
-      const sourceUrl = speech.urlTexto || speech.urlVideo || speech.urlAudio || speech.uriEvento || SOURCE_URL;
+      const sourceUrl =
+        speech.urlTexto ||
+        speech.urlVideo ||
+        speech.urlAudio ||
+        speech.uriEvento ||
+        SOURCE_URL;
       return {
         id: `camara-speech-${occurredAt}-${index}`,
         type: "speech" as const,
         title: speech.tipoDiscurso || speech.faseEvento?.titulo || "Discurso",
-        description: speech.sumario || speech.keywords || "Pronunciamento registrado nos Dados Abertos da Câmara.",
+        description:
+          speech.sumario ||
+          speech.keywords ||
+          "Pronunciamento registrado nos Dados Abertos da Câmara.",
         occurredAt,
         source: "camara" as const,
         sourceLabel: SOURCE,
@@ -358,7 +446,7 @@ function buildSpeechActivities(speeches: CamaraSpeech[]): MandateActivity[] {
         },
       } satisfies MandateActivity;
     })
-    .filter((item): item is MandateActivity => item !== null);
+    .filter((item): item is NonNullable<typeof item> => item !== null);
 }
 
 export async function getMandateActivitySummary(args: {
@@ -369,27 +457,56 @@ export async function getMandateActivitySummary(args: {
   const { deputyId, periodStart, periodEnd } = args;
   const warnings: string[] = [];
 
-  const [mandateResult, eventsResult, speechesResult, plenaryResult] = await Promise.allSettled([
-    getMandateInfo(deputyId),
-    getDeputyEvents(deputyId, periodStart, periodEnd),
-    getSpeeches(deputyId, periodStart, periodEnd),
-    getPlenaryEvents(periodStart, periodEnd),
-  ]);
+  const [mandateResult, eventsResult, speechesResult, plenaryResult] =
+    await Promise.allSettled([
+      getMandateInfo(deputyId),
+      getDeputyEvents(deputyId, periodStart, periodEnd),
+      getSpeeches(deputyId, periodStart, periodEnd),
+      getPlenaryEvents(periodStart, periodEnd),
+    ]);
 
-  const mandate = mandateResult.status === "fulfilled"
-    ? mandateResult.value
-    : { legislatureId: null, startDate: null, endDate: null, years: Array.from({ length: 4 }, (_, i) => new Date().getFullYear() - 3 + i) };
+  const mandate =
+    mandateResult.status === "fulfilled"
+      ? mandateResult.value
+      : {
+          legislatureId: null,
+          startDate: null,
+          endDate: null,
+          years: Array.from(
+            { length: 4 },
+            (_, i) => new Date().getFullYear() - 3 + i,
+          ),
+        };
 
-  const events = eventsResult.status === "fulfilled" ? eventsResult.value : (warnings.push("Eventos do parlamentar indisponíveis no momento."), []);
-  const speeches = speechesResult.status === "fulfilled" ? speechesResult.value : (warnings.push("Discursos indisponíveis no momento."), []);
-  const plenaryEvents = plenaryResult.status === "fulfilled" ? plenaryResult.value : (warnings.push("Sessões do Plenário indisponíveis no momento."), []);
+  const events =
+    eventsResult.status === "fulfilled"
+      ? eventsResult.value
+      : (warnings.push("Eventos do parlamentar indisponíveis no momento."), []);
+  const speeches =
+    speechesResult.status === "fulfilled"
+      ? speechesResult.value
+      : (warnings.push("Discursos indisponíveis no momento."), []);
+  const plenaryEvents =
+    plenaryResult.status === "fulfilled"
+      ? plenaryResult.value
+      : (warnings.push("Sessões do Plenário indisponíveis no momento."), []);
 
-  const attendance = buildAttendance(deputyId, periodStart, periodEnd, events, plenaryEvents, warnings);
+  const attendance = buildAttendance(
+    deputyId,
+    periodStart,
+    periodEnd,
+    events,
+    plenaryEvents,
+    warnings,
+  );
   const votes = await buildVotes(deputyId, events, warnings);
   const speechActivities = buildSpeechActivities(speeches);
 
   const activities = [...votes, ...speechActivities]
-    .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime(),
+    )
     .slice(0, 100);
 
   return {
