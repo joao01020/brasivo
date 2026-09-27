@@ -22,10 +22,7 @@ async function requestHomeJson<T>(url: string): Promise<T> {
   const now = Date.now();
   const cached = homeRequestCache.get(url);
 
-  if (
-    cached &&
-    now - cached.timestamp < HOME_REQUEST_CACHE_MS
-  ) {
+  if (cached && now - cached.timestamp < HOME_REQUEST_CACHE_MS) {
     return cached.value as T;
   }
 
@@ -90,6 +87,150 @@ const STATE_NAMES: Record<string, string> = {
 };
 
 export default function HomePage() {
+  // BRASIVO_TRANSPARENCY_PARALLAX_V1
+  useEffect(() => {
+    const section = document.querySelector<HTMLElement>(
+      '[data-parallax-section="transparency"]',
+    );
+
+    if (!section) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+    const layers = Array.from(
+      section.querySelectorAll<HTMLElement>("[data-parallax-depth]"),
+    );
+
+    let frameId: number | null = null;
+    let destroyed = false;
+
+    const resetLayers = () => {
+      for (const layer of layers) {
+        layer.style.removeProperty("--brasivo-parallax-x");
+        layer.style.removeProperty("--brasivo-parallax-y");
+      }
+    };
+
+    const updateParallax = () => {
+      frameId = null;
+
+      if (destroyed || reducedMotion.matches) {
+        resetLayers();
+        return;
+      }
+
+      const rect = section.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
+      /*
+       * 0 = seção chegando pela parte inferior
+       * 1 = seção terminando pela parte superior.
+       */
+      const rawProgress =
+        (viewportHeight - rect.top) / (viewportHeight + rect.height);
+
+      const progress = Math.min(1, Math.max(0, rawProgress));
+
+      /*
+       * -1 → 0 → +1
+       *
+       * O centro da seção representa zero para que não
+       * exista um salto perceptível ao entrar no viewport.
+       */
+      const centered = (progress - 0.5) * 2;
+
+      for (const layer of layers) {
+        const depth = Number(layer.dataset.parallaxDepth ?? 0);
+
+        const horizontalDepth = Number(layer.dataset.parallaxX ?? 0);
+
+        /*
+         * Limites deliberadamente pequenos.
+         * O maior deslocamento fica próximo de 30 px.
+         */
+        const y = centered * depth * 28;
+
+        const x = centered * horizontalDepth * 20;
+
+        layer.style.setProperty("--brasivo-parallax-y", `${y.toFixed(2)}px`);
+
+        layer.style.setProperty("--brasivo-parallax-x", `${x.toFixed(2)}px`);
+      }
+
+      section.style.setProperty(
+        "--brasivo-story-progress",
+        progress.toFixed(4),
+      );
+    };
+
+    const requestUpdate = () => {
+      if (frameId !== null) return;
+
+      frameId = window.requestAnimationFrame(updateParallax);
+    };
+
+    /*
+     * Só adicionamos a classe depois do JS iniciar.
+     * Assim a seção nunca fica invisível caso JS falhe.
+     */
+    section.classList.add("parallax-ready");
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+
+          section.classList.add("is-in-view");
+
+          observer.unobserve(section);
+        }
+      },
+      {
+        threshold: 0.16,
+      },
+    );
+
+    observer.observe(section);
+
+    requestUpdate();
+
+    window.addEventListener("scroll", requestUpdate, {
+      passive: true,
+    });
+
+    window.addEventListener("resize", requestUpdate, {
+      passive: true,
+    });
+
+    const handleReducedMotion = () => {
+      if (reducedMotion.matches) {
+        resetLayers();
+      } else {
+        requestUpdate();
+      }
+    };
+
+    reducedMotion.addEventListener?.("change", handleReducedMotion);
+
+    return () => {
+      destroyed = true;
+
+      window.removeEventListener("scroll", requestUpdate);
+
+      window.removeEventListener("resize", requestUpdate);
+
+      reducedMotion.removeEventListener?.("change", handleReducedMotion);
+
+      observer.disconnect();
+
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+
+      resetLayers();
+    };
+  }, []);
+
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [dashboardReady, setDashboardReady] = useState(false);
   const [representativesReady, setRepresentativesReady] = useState(false);
@@ -186,8 +327,7 @@ export default function HomePage() {
       if (state) parameters.set("state", state);
       if (query) parameters.set("query", query);
 
-      const url =
-        `/api/representatives?${parameters.toString()}`;
+      const url = `/api/representatives?${parameters.toString()}`;
 
       const payload = await requestHomeJson<{
         representatives?: Representative[];
@@ -211,8 +351,7 @@ export default function HomePage() {
     const ids = representatives.map((item) => item.id).join(",");
     let active = true;
 
-    const url =
-      `/api/mandates/followers?ids=${encodeURIComponent(ids)}`;
+    const url = `/api/mandates/followers?ids=${encodeURIComponent(ids)}`;
 
     void requestHomeJson<{
       counts?: Record<string, number>;
@@ -335,45 +474,250 @@ export default function HomePage() {
         <div className="map-first-ambient map-first-ambient-a" />
         <div className="map-first-ambient map-first-ambient-b" />
 
-        <div className="map-first-heading">
-          <span>BRASIL EM TRANSPARÊNCIA</span>
-          <h1>
-            Explore o Brasil.
-            <em> Estado por estado.</em>
-          </h1>
-          <p>Selecione uma UF no mapa.</p>
-        </div>
+        <div className="map-first-layout">
+          <div className="map-first-heading">
+            <span>BRASIL EM TRANSPARÊNCIA</span>
 
-        <div className="map-first-stage">
-          <div className="map-first-depth-ring ring-one" />
-          <div className="map-first-depth-ring ring-two" />
-          <div className="map-first-depth-ring ring-three" />
-
-          <BrazilMap
-            selectedState={selectedState}
-            representativeCounts={dashboard?.representativesByState}
-            onSelectState={handleStateSelection}
-          />
-
-          <div className="map-first-state-card">
-            <div className="state-card-kicker">
-              <span>UF SELECIONADA</span>
-              <i />
-            </div>
-
-            <strong>{selectedState}</strong>
+            <h1>
+              Explore a atuação dos deputados federais no Brasil.
+              <em> Estado por estado.</em>
+            </h1>
 
             <p>
-              {isLoadingRepresentatives
-                ? "Consultando fonte oficial…"
-                : `${selectedStateCount} deputados federais retornados`}
+              Consulte deputados federais, despesas, projetos e atividade
+              legislativa com base em dados oficiais.
             </p>
-
-            <button onClick={openSelectedState}>
-              Explorar {selectedState}
-              <ArrowRight size={16} />
-            </button>
           </div>
+
+          <div className="map-first-stage">
+            <div className="map-first-depth-ring ring-one" />
+            <div className="map-first-depth-ring ring-two" />
+            <div className="map-first-depth-ring ring-three" />
+
+            <BrazilMap
+              selectedState={selectedState}
+              representativeCounts={dashboard?.representativesByState}
+              onSelectState={handleStateSelection}
+            />
+
+            <div className="map-first-state-card">
+              <div className="state-card-kicker">
+                <span>UF SELECIONADA</span>
+                <i />
+              </div>
+
+              <strong>{selectedState}</strong>
+
+              <p>
+                {isLoadingRepresentatives
+                  ? "Consultando fonte oficial…"
+                  : `${selectedStateCount} deputados federais retornados`}
+              </p>
+
+              <button onClick={openSelectedState}>
+                Explorar {selectedState}
+                <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="map-first-bottom-fade" aria-hidden="true" />
+      </section>
+
+      {/* =====================================================
+          FASE 2 — TRANSPARÊNCIA / IMPACTO VISUAL
+          ===================================================== */}
+      <section
+        className="brasivo-transparency-story"
+        data-parallax-section="transparency"
+        aria-labelledby="brasivo-transparency-title"
+      >
+        <div
+          className="transparency-story-ambient transparency-story-ambient-left"
+          aria-hidden="true"
+        />
+        <div
+          className="transparency-story-ambient transparency-story-ambient-right"
+          aria-hidden="true"
+        />
+
+        <div
+          className="transparency-story-orbit transparency-story-orbit-one"
+          data-parallax-depth="-0.28"
+          data-parallax-x="0.16"
+          aria-hidden="true"
+        />
+        <div
+          className="transparency-story-orbit transparency-story-orbit-two"
+          data-parallax-depth="0.22"
+          data-parallax-x="-0.14"
+          aria-hidden="true"
+        />
+
+        <div
+          className="transparency-data-trace trace-a"
+          data-parallax-depth="0.34"
+          data-parallax-x="-0.20"
+          aria-hidden="true"
+        >
+          <i />
+          <i />
+          <i />
+        </div>
+
+        <div
+          className="transparency-data-trace trace-b"
+          data-parallax-depth="-0.30"
+          data-parallax-x="0.18"
+          aria-hidden="true"
+        >
+          <i />
+          <i />
+        </div>
+
+        <article
+          className="transparency-float-card transparency-card-deputies"
+          data-parallax-depth="1.05"
+          data-parallax-x="-0.4"
+        >
+          <div className="transparency-card-head">
+            <div className="transparency-card-icon">
+              <span className="transparency-person-icon" />
+            </div>
+
+            <strong>Deputados</strong>
+          </div>
+
+          <div className="transparency-people-preview" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </div>
+
+          <div className="transparency-card-lines" aria-hidden="true">
+            <span />
+            <span />
+          </div>
+
+          <div className="transparency-card-arrow" aria-hidden="true">
+            →
+          </div>
+        </article>
+
+        <article
+          className="transparency-float-card transparency-card-expenses"
+          data-parallax-depth="0.72"
+          data-parallax-x="0.32"
+        >
+          <div className="transparency-card-head">
+            <div className="transparency-card-icon">
+              <span className="transparency-doc-icon" />
+            </div>
+
+            <strong>Despesas</strong>
+          </div>
+
+          <div className="transparency-expense-preview">
+            <span>R$</span>
+
+            <div className="transparency-bars" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+              <i />
+            </div>
+          </div>
+
+          <div className="transparency-card-lines" aria-hidden="true">
+            <span />
+            <span />
+          </div>
+        </article>
+
+        <article
+          className="transparency-float-card transparency-card-projects"
+          data-parallax-depth="0.96"
+          data-parallax-x="0.38"
+        >
+          <div className="transparency-card-head">
+            <div className="transparency-card-icon">
+              <span className="transparency-project-icon" />
+            </div>
+
+            <strong>Projetos</strong>
+          </div>
+
+          <div className="transparency-card-lines transparency-card-lines-wide">
+            <span />
+            <span />
+            <span />
+          </div>
+
+          <div className="transparency-card-arrow" aria-hidden="true">
+            →
+          </div>
+        </article>
+
+        <article
+          className="transparency-float-card transparency-card-activity"
+          data-parallax-depth="0.66"
+          data-parallax-x="-0.28"
+        >
+          <div className="transparency-card-head">
+            <div className="transparency-card-icon">
+              <span className="transparency-activity-icon">
+                <i />
+                <i />
+                <i />
+              </span>
+            </div>
+
+            <strong>Atividade</strong>
+          </div>
+
+          <div className="transparency-activity-chart" aria-hidden="true">
+            <svg viewBox="0 0 220 70" preserveAspectRatio="none">
+              <path d="M0 54 C20 58, 27 39, 45 44 S72 55, 88 39 S112 25, 127 39 S154 57, 171 35 S199 15, 220 24" />
+            </svg>
+          </div>
+
+          <div className="transparency-card-lines" aria-hidden="true">
+            <span />
+            <span />
+          </div>
+        </article>
+
+        <div
+          className="transparency-story-center"
+          data-parallax-depth="0.18"
+          data-parallax-x="0"
+        >
+          <div className="transparency-story-kicker">
+            <i />
+            <span>BRASIVO / TRANSPARÊNCIA</span>
+            <i />
+          </div>
+
+          <h2 id="brasivo-transparency-title">
+            Cada gasto público deixa um
+            <strong> registro.</strong>
+          </h2>
+
+          <p>
+            O BRASIVO ajuda você a<b> enxergá-lo.</b>
+          </p>
+
+          <div className="transparency-story-divider" aria-hidden="true" />
+
+          <span className="transparency-story-source">DADOS OFICIAIS</span>
+        </div>
+
+        <div className="transparency-story-bottom" aria-hidden="true">
+          <i />
+          <span>EXPLORE OS DADOS</span>
+          <i />
         </div>
       </section>
 
