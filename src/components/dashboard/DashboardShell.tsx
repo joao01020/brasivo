@@ -1,10 +1,11 @@
 "use client";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Info, Minus, ShieldCheck, UserRound } from "lucide-react";
+import { ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Info, Minus, ShieldCheck, UserRound, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
+import pagerStyles from "./DashboardFollowedPager.module.css";
 import { subscribeToMandateNotifications } from "@/lib/notifications/realtime";
 import DashboardUserAvatar from "@/components/account/DashboardUserAvatar";
 
@@ -31,6 +32,21 @@ export default function DashboardShell(props:Props={}){
  const [notifications,setNotifications]=useState<DashboardNotification[]>(props.notifications??[]);
  const [unreadNotifications,setUnreadNotifications]=useState(props.unreadNotifications??0);
  const [followedMandates,setFollowedMandates]=useState<Followed[]>(props.followedMandates??[]);
+ const [followedPage,setFollowedPage]=useState(0);
+
+ const FOLLOWED_PAGE_SIZE=4;
+ const followedPageCount=Math.max(1,Math.ceil(followedMandates.length/FOLLOWED_PAGE_SIZE));
+ const visibleFollowedMandates=followedMandates.slice(
+  followedPage*FOLLOWED_PAGE_SIZE,
+  followedPage*FOLLOWED_PAGE_SIZE+FOLLOWED_PAGE_SIZE,
+ );
+ const canGoFollowedPrev=followedPage>0;
+ const canGoFollowedNext=followedPage<followedPageCount-1;
+
+ useEffect(()=>{
+  setFollowedPage(current=>Math.min(current,followedPageCount-1));
+ },[followedPageCount]);
+
 
  /* BRASIVO_MANDATE_NOTIFICATIONS_REALTIME_V6 */
  useEffect(()=>{
@@ -128,7 +144,35 @@ export default function DashboardShell(props:Props={}){
       </div>
     </div>
 
-    <div className="dashboard-layout"><section className="dashboard-main-column"><article className="dashboard-panel dashboard-panel-primary"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><UserRound size={18}/></div><div><small>ACOMPANHAMENTO</small><h2>Mandatos que você acompanha</h2></div></div><Link className="panel-heading-link" href="/#map">Explorar <ArrowRight size={14}/></Link></div>
- {followedMandates.length?<div className="followed-list">{followedMandates.map(item=><div className="followed-row" key={item.id} role="link" tabIndex={0} onClick={()=>router.push(`/mandate/${item.representative_external_id}`)} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();router.push(`/mandate/${item.representative_external_id}`)}}}><div className="followed-row-content">{item.photoUrl?<img className="followed-row-photo" src={item.photoUrl} alt="" aria-hidden="true" loading="lazy"/>:<span className="followed-row-photo followed-row-photo-placeholder" aria-hidden="true"><UserRound size={14}/></span>}<div className="followed-row-copy"><small>{item.representative_office||"Mandato"}</small><strong>{item.representative_name}</strong><span>{item.representative_state||"BR"}</span></div></div><Trend trend={item.expenseTrend} onOpen={()=>router.push(`/mandate/${item.representative_external_id}?tab=expenses`)}/><ArrowRight className="followed-row-arrow" size={15}/></div>)}</div>:<div className="dashboard-empty-state"><div className="empty-orbit"><UserRound size={24}/></div><strong>Nenhum mandato acompanhado</strong><p>Escolha mandatos para transformar este painel em uma visão pessoal da atividade pública.</p><Link className="dashboard-primary-link" href="/#map">Explorar o mapa <ArrowRight size={15}/></Link></div>}</article></section>
+    <div className="dashboard-layout"><section className="dashboard-main-column"><article className="dashboard-panel dashboard-panel-primary"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><UserRound size={18}/></div><div><small>ACOMPANHAMENTO</small><h2>Mandatos que você acompanha</h2></div></div><div className={pagerStyles.headerActions} data-dashboard-followed-pager-v1>
+  {followedMandates.length>FOLLOWED_PAGE_SIZE&&(
+    <div className={pagerStyles.pager} aria-label="Navegar entre mandatos acompanhados">
+      <button
+        type="button"
+        className={pagerStyles.arrowButton}
+        onClick={()=>setFollowedPage(current=>Math.max(0,current-1))}
+        disabled={!canGoFollowedPrev}
+        aria-label="Mostrar mandatos anteriores"
+        title="Mandatos anteriores"
+      >
+        <ChevronLeft size={16}/>
+      </button>
+
+      <button
+        type="button"
+        className={pagerStyles.arrowButton}
+        onClick={()=>setFollowedPage(current=>Math.min(followedPageCount-1,current+1))}
+        disabled={!canGoFollowedNext}
+        aria-label="Mostrar próximos mandatos"
+        title="Próximos mandatos"
+      >
+        <ChevronRight size={16}/>
+      </button>
+    </div>
+  )}
+
+  <Link className="panel-heading-link" href="/#map">Explorar <ArrowRight size={14}/></Link>
+</div></div>
+ {followedMandates.length?<div className="followed-list">{visibleFollowedMandates.map(item=><div className="followed-row" key={item.id} role="link" tabIndex={0} onClick={()=>router.push(`/mandate/${item.representative_external_id}`)} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();router.push(`/mandate/${item.representative_external_id}`)}}}><div className="followed-row-content">{item.photoUrl?<img className="followed-row-photo" src={item.photoUrl} alt="" aria-hidden="true" loading="lazy"/>:<span className="followed-row-photo followed-row-photo-placeholder" aria-hidden="true"><UserRound size={14}/></span>}<div className="followed-row-copy"><small>{item.representative_office||"Mandato"}</small><strong>{item.representative_name}</strong><span>{item.representative_state||"BR"}</span></div></div><Trend trend={item.expenseTrend} onOpen={()=>router.push(`/mandate/${item.representative_external_id}?tab=expenses`)}/><ArrowRight className="followed-row-arrow" size={15}/></div>)}</div>:<div className="dashboard-empty-state"><div className="empty-orbit"><UserRound size={24}/></div><strong>Nenhum mandato acompanhado</strong><p>Escolha mandatos para transformar este painel em uma visão pessoal da atividade pública.</p><Link className="dashboard-primary-link" href="/#map">Explorar o mapa <ArrowRight size={15}/></Link></div>}</article></section>
  <aside className="dashboard-side-column"><article className="dashboard-panel dashboard-activity-panel"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><Bell size={18}/></div><div><small>LINHA DO TEMPO</small><h2>Atividade recente</h2></div></div><span className="panel-muted-label">Atualizações verificáveis</span></div>{notifications.length?<div className="dashboard-feed">{notifications.slice(0,8).map(n=><div className="dashboard-feed-item" key={n.id}><i/><div><strong>{n.title}</strong>{n.message&&<p>{n.message}</p>}<span>{new Date(n.occurredAt||n.createdAt).toLocaleDateString("pt-BR")}</span></div></div>)}</div>:<div className="dashboard-activity-empty"><span className="activity-empty-dot"/><div><strong>Nenhuma atividade para exibir</strong><p>As atualizações dos mandatos acompanhados serão organizadas aqui em ordem cronológica.</p></div></div>}</article></aside></div></section></main>;
 }

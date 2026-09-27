@@ -1,0 +1,61 @@
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pager {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arrowButton {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid rgba(91, 164, 125, 0.22);
+  border-radius: 9px;
+  background: rgba(8, 20, 22, 0.72);
+  color: rgba(215, 231, 224, 0.9);
+  display: inline-grid;
+  place-items: center;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+
+.arrowButton:hover:not(:disabled) {
+  border-color: rgba(74, 218, 139, 0.4);
+  background: rgba(17, 45, 35, 0.76);
+  color: #77d99f;
+}
+
+.arrowButton:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.arrowButton:disabled {
+  opacity: 0.28;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .headerActions {
+    gap: 7px;
+  }
+
+  .pager {
+    gap: 4px;
+  }
+
+  .arrowButton {
+    width: 28px;
+    height: 28px;
+  }
+}
