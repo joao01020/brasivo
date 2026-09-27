@@ -11,12 +11,15 @@ import {
   Save,
   Trash2,
   UserRound,
+  ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
+import SettingsPrivacyCard from "@/components/settings/SettingsPrivacyCard";
+import "./SettingsPrivacyShortcut.css";
 import ProfileAvatarEditor from "@/components/account/ProfileAvatarEditor";
 
 type SettingsShellProps = {
@@ -244,6 +247,19 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
             <a href="#perfil" className="is-active"><UserRound size={16} /> Perfil <ChevronRight size={14} /></a>
             <a href="#seguranca"><LockKeyhole size={16} /> Segurança <ChevronRight size={14} /></a>
             <a href="#zona-de-perigo"><AlertTriangle size={16} /> Conta <ChevronRight size={14} /></a>
+
+            <div className="settings-nav-legal">
+              <span className="settings-nav-legal-label">LEGAL</span>
+
+              <Link
+                href="/privacy"
+                className="settings-nav-privacy-button"
+              >
+                <ShieldCheck size={16} />
+                Política de Privacidade
+                <ChevronRight size={14} />
+              </Link>
+            </div>
           </aside>
 
           <div className="settings-panels">
@@ -327,6 +343,8 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
                 </button>
               </form>
             </section>
+
+            <SettingsPrivacyCard />
 
             <section className="settings-card settings-danger-card" id="zona-de-perigo">
               <button
