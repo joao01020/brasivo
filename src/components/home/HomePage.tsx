@@ -354,8 +354,33 @@ export default function HomePage() {
 
             <div className="state-modal-body">
               {isLoadingRepresentatives ? (
-                <div className="state-modal-loading">
-                  Consultando dados oficiais…
+                <div
+                  className="brasivo-state-directory-skeleton"
+                  aria-busy="true"
+                  aria-label="Carregando mandatos"
+                >
+                  {Array.from({ length: 10 }, (_, index) => (
+                    <div
+                      className="brasivo-state-directory-skeleton-card"
+                      key={`mandate-skeleton-${index}`}
+                      aria-hidden="true"
+                    >
+                      <span className="brasivo-state-directory-skeleton-photo" />
+
+                      <div className="brasivo-state-directory-skeleton-info">
+                        <span className="brasivo-state-directory-skeleton-role" />
+                        <span className="brasivo-state-directory-skeleton-name" />
+                        <span className="brasivo-state-directory-skeleton-party" />
+
+                        <div className="brasivo-state-directory-skeleton-follow">
+                          <span className="brasivo-state-directory-skeleton-follow-icon" />
+                          <span className="brasivo-state-directory-skeleton-follow-text" />
+                        </div>
+                      </div>
+
+                      <span className="brasivo-state-directory-skeleton-arrow" />
+                    </div>
+                  ))}
                 </div>
               ) : representatives.length ? (
                 <div className="state-modal-grid">
