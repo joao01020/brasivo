@@ -8,6 +8,7 @@ export type ApiRateLimitPolicyName =
   | "PUBLIC_HEAVY"
   | "AI"
   | "AUTH_WRITE"
+  | "SECURITY_READ"
   | "SECURITY"
   | "ACCOUNT_DELETE"
   | "INTERNAL";
@@ -52,6 +53,12 @@ const POLICIES: Record<ApiRateLimitPolicyName, Policy> = {
     failOpen: false,
     includeUserIdentity: true,
     maxBodyBytes: 64 * 1024,
+  },
+  SECURITY_READ: {
+    limit: 60,
+    windowSeconds: 60,
+    failOpen: false,
+    includeUserIdentity: true,
   },
   SECURITY: {
     limit: 5,

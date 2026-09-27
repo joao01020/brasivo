@@ -37,8 +37,8 @@ export async function GET(request: Request) {
   /* BRASIVO_API_RATE_LIMIT_V2:GET:account-mfa */
   const brasivoRateLimit = await enforceApiRateLimit(
     request,
-    "SECURITY",
-    "account-mfa",
+    "SECURITY_READ",
+    "account-mfa-state",
   );
   if (brasivoRateLimit) return brasivoRateLimit;
 
