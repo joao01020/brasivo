@@ -1,3 +1,4 @@
+import { enforceSensitiveAction } from "@/lib/auth/server-security";
 import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
@@ -5,6 +6,10 @@ import { createClient } from "@/lib/supabase/server";
 const CONFIRMATION_TEXT = "EXCLUIR MINHA CONTA";
 
 export async function DELETE(request: Request) {
+  // brasivoMfaSensitiveGate: backend authority for opted-in MFA accounts.
+  const brasivoMfaSensitiveGate = await enforceSensitiveAction();
+  if (brasivoMfaSensitiveGate) return brasivoMfaSensitiveGate;
+
   const client = await createClient();
   const { data: userData, error: userError } = await client.auth.getUser();
   const user = userData.user;

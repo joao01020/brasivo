@@ -1,5 +1,6 @@
 "use client";
 
+import "@/components/settings/SettingsPasswordVisibility.css";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -18,6 +19,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
+import MfaSettings from "@/components/settings/MfaSettings";
 import SettingsPrivacyCard from "@/components/settings/SettingsPrivacyCard";
 import "./SettingsPrivacyShortcut.css";
 import ProfileAvatarEditor from "@/components/account/ProfileAvatarEditor";
@@ -40,6 +42,9 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordSaved, setPasswordSaved] = useState(false);
 
@@ -116,62 +121,76 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
     setSavingProfile(false);
   }
 
-  async function changePassword(event: FormEvent) {
+        async function changePassword(event: FormEvent) {
     event.preventDefault();
     setMessage(null);
     setPasswordSaved(false);
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      showMessage("Preencha os três campos de senha.", "error");
+      showMessage("Preencha todos os campos de senha.", "error");
       return;
     }
+
     if (newPassword.length < 8) {
-      showMessage("A nova senha deve ter pelo menos 8 caracteres.", "error");
+      showMessage("A nova senha precisa ter pelo menos 8 caracteres.", "error");
       return;
     }
+
     if (newPassword !== confirmPassword) {
-      showMessage("A confirmação da nova senha não confere.", "error");
+      showMessage("A confirmação da nova senha não corresponde.", "error");
       return;
     }
+
     if (currentPassword === newPassword) {
       showMessage("A nova senha deve ser diferente da senha atual.", "error");
       return;
     }
 
     setSavingPassword(true);
-    const client = createClient();
 
-    // Confirma a senha atual antes de permitir a troca.
-    const { error: verificationError } = await client.auth.signInWithPassword({
-      email,
-      password: currentPassword,
-    });
+    try {
+      const response = await fetch("/api/account/security/password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+        }),
+      });
 
-    if (verificationError) {
-      showMessage("A senha atual está incorreta.", "error");
+      const result = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (result.code === "MFA_REQUIRED") {
+          window.location.href =
+            "/mfa?next=" + encodeURIComponent("/settings#seguranca");
+          return;
+        }
+
+        showMessage(
+          result.error || "Não foi possível alterar a senha.",
+          "error",
+        );
+        return;
+      }
+
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setPasswordSaved(true);
+      showMessage("Senha alterada com sucesso.");
+    } catch {
+      showMessage(
+        "Não foi possível alterar a senha. Verifique sua conexão.",
+        "error",
+      );
+    } finally {
       setSavingPassword(false);
-      return;
     }
-
-    const { error: updateError } = await client.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (updateError) {
-      showMessage("Não foi possível alterar a senha. Tente novamente.", "error");
-      setSavingPassword(false);
-      return;
-    }
-
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setPasswordSaved(true);
-    showMessage("Senha alterada com sucesso.");
-    setSavingPassword(false);
   }
 
-  async function deleteAccount() {
+async function deleteAccount() {
     setMessage(null);
 
     if (deleteConfirmation !== confirmationText) {
@@ -297,44 +316,101 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
                 <p>Confirme sua senha atual antes de definir uma nova senha.</p>
               </div>
 
+              <MfaSettings />
+
               <form onSubmit={changePassword} className="settings-form settings-password-form">
                 <label>
                   <span>Senha atual</span>
-                  <div className="settings-input-icon">
-                    <KeyRound size={14} />
-                    <input
-                      type="password"
-                      autoComplete="current-password"
-                      value={currentPassword}
-                      onChange={(e) => { setCurrentPassword(e.target.value); setPasswordSaved(false); }}
-                      placeholder="Digite sua senha atual"
-                    />
+                  <div className="settings-password-field-row">
+                    <div className="settings-input-icon">
+                      <KeyRound size={14} />
+                      <input
+                        type={showCurrentPassword ? "text" : "password"}
+                        autoComplete="current-password"
+                        value={currentPassword}
+                        onChange={(e) => {
+                          setCurrentPassword(e.target.value);
+                          setPasswordSaved(false);
+                        }}
+                        placeholder="Digite sua senha atual"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="settings-password-visibility-toggle"
+                      onClick={() => setShowCurrentPassword((value) => !value)}
+                      aria-label={
+                        showCurrentPassword
+                          ? "Ocultar senha atual"
+                          : "Mostrar senha atual"
+                      }
+                      aria-pressed={showCurrentPassword}
+                    >
+                      {showCurrentPassword ? "Ocultar" : "Mostrar"}
+                    </button>
                   </div>
                 </label>
                 <label>
                   <span>Nova senha</span>
-                  <div className="settings-input-icon">
-                    <LockKeyhole size={14} />
-                    <input
-                      type="password"
-                      autoComplete="new-password"
-                      value={newPassword}
-                      onChange={(e) => { setNewPassword(e.target.value); setPasswordSaved(false); }}
-                      placeholder="Mínimo de 8 caracteres"
-                    />
+                  <div className="settings-password-field-row">
+                    <div className="settings-input-icon">
+                      <LockKeyhole size={14} />
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        value={newPassword}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value);
+                          setPasswordSaved(false);
+                        }}
+                        placeholder="Mínimo de 8 caracteres"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="settings-password-visibility-toggle"
+                      onClick={() => setShowNewPassword((value) => !value)}
+                      aria-label={
+                        showNewPassword ? "Ocultar nova senha" : "Mostrar nova senha"
+                      }
+                      aria-pressed={showNewPassword}
+                    >
+                      {showNewPassword ? "Ocultar" : "Mostrar"}
+                    </button>
                   </div>
                 </label>
                 <label>
                   <span>Confirmar nova senha</span>
-                  <div className="settings-input-icon">
-                    <LockKeyhole size={14} />
-                    <input
-                      type="password"
-                      autoComplete="new-password"
-                      value={confirmPassword}
-                      onChange={(e) => { setConfirmPassword(e.target.value); setPasswordSaved(false); }}
-                      placeholder="Digite a nova senha novamente"
-                    />
+                  <div className="settings-password-field-row">
+                    <div className="settings-input-icon">
+                      <LockKeyhole size={14} />
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setPasswordSaved(false);
+                        }}
+                        placeholder="Digite a nova senha novamente"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      className="settings-password-visibility-toggle"
+                      onClick={() => setShowConfirmPassword((value) => !value)}
+                      aria-label={
+                        showConfirmPassword
+                          ? "Ocultar confirmação da nova senha"
+                          : "Mostrar confirmação da nova senha"
+                      }
+                      aria-pressed={showConfirmPassword}
+                    >
+                      {showConfirmPassword ? "Ocultar" : "Mostrar"}
+                    </button>
                   </div>
                 </label>
                 <button className="settings-save" type="submit" disabled={savingPassword}>

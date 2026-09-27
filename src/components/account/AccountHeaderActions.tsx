@@ -1,5 +1,7 @@
 "use client";
 
+
+import MfaSessionGuard from "@/components/auth/MfaSessionGuard";
 import { Bell, LayoutDashboard, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -168,6 +170,7 @@ export default function AccountHeaderActions() {
 
   return (
     <div className="dashboard-header-actions account-header-actions">
+   <MfaSessionGuard />
       <div
         className="dashboard-menu-anchor"
         ref={notificationRef}
