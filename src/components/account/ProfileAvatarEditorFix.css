@@ -1,0 +1,53 @@
+
+/*
+ * BRASIVO — avatar camera stacking fix.
+ *
+ * The camera button is a sibling of UserAvatar inside
+ * .settings-avatar-preview. Keep the avatar below the control and
+ * explicitly place the control above it.
+ */
+.settings-avatar-preview {
+  position: relative !important;
+  isolation: isolate;
+  overflow: visible !important;
+}
+
+.settings-avatar-preview > .brasivo-user-avatar,
+.settings-avatar-preview > .settings-avatar-loading {
+  position: relative;
+  z-index: 1;
+}
+
+.settings-avatar-camera {
+  position: absolute !important;
+  right: -3px !important;
+  bottom: -3px !important;
+  z-index: 5 !important;
+
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+
+  display: grid !important;
+  place-items: center !important;
+
+  border-radius: 50% !important;
+  border: 1px solid rgba(64, 220, 140, .38) !important;
+  background: #081713 !important;
+  color: #54de96 !important;
+  box-shadow:
+    0 0 0 3px #071013,
+    0 5px 14px rgba(0, 0, 0, .32) !important;
+
+  cursor: pointer;
+}
+
+.settings-avatar-camera:hover:not(:disabled) {
+  background: #0c2119 !important;
+  border-color: rgba(75, 230, 149, .58) !important;
+}
+
+.settings-avatar-camera:disabled {
+  opacity: .55;
+  cursor: default;
+}

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import UserAvatar, {
   announceBrasivoProfileUpdated,
 } from "@/components/account/UserAvatar";
+import "./ProfileAvatarEditorFix.css";
 
 const BUCKET = "profile-avatars";
 const OBJECT_NAME = "avatar";
