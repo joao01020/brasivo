@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Search, X } from "lucide-react";
+import { Bell, X } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -108,16 +108,7 @@ export default function DashboardHeader({
         </div>
 
         <div className="dashboard-header-actions">
-          <button
-            className="dashboard-search-trigger"
-            type="button"
-            aria-label="Buscar"
-            onClick={() => router.push("/#map")}
-          >
-            <Search size={17} />
-            <span>Buscar</span>
-            <kbd>⌘ K</kbd>
-          </button>
+          
 
           <div
             className="dashboard-menu-anchor"
