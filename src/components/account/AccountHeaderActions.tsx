@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Bell,
-  LayoutDashboard,
-  Search,
-  X,
-} from "lucide-react";
+import { Bell, LayoutDashboard, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -173,17 +168,6 @@ export default function AccountHeaderActions() {
 
   return (
     <div className="dashboard-header-actions account-header-actions">
-      <button
-        className="dashboard-search-trigger"
-        type="button"
-        aria-label="Buscar"
-        onClick={() => router.push("/#map")}
-      >
-        <Search size={17} />
-        <span>Buscar</span>
-        <kbd>⌘ K</kbd>
-      </button>
-
       <div
         className="dashboard-menu-anchor"
         ref={notificationRef}

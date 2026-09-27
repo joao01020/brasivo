@@ -160,8 +160,8 @@ export default function HomePage() {
         <nav>
           <a className="nav-active" href="#">Início</a>
           <a href="#map">Mapa</a>
-          <button type="button" className="topbar-nav-button" onClick={openSelectedState}>Mandatos</button>
-          <a href="#about">Sobre</a>
+          
+          
         </nav>
         <form className="search" onSubmit={handleSearch}>
           <Search size={18} />

@@ -103,9 +103,7 @@ export default function DashboardHeader({
               Dashboard
             </Link>
             <Link href="/#map">Mapa</Link>
-            <Link href="/#representatives">
-              Representantes
-            </Link>
+            
           </nav>
         </div>
 
