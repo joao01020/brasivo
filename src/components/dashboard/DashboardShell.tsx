@@ -1,178 +1,1142 @@
 "use client";
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Bell, Info, Minus, ShieldCheck, UserRound, ChevronLeft, ChevronRight } from "lucide-react";
+
+import {
+  ArrowDownRight,
+  ArrowRight,
+  ArrowUpRight,
+  Bell,
+  Info,
+  Minus,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
-import pagerStyles from "./DashboardFollowedPager.module.css";
-import { subscribeToMandateNotifications } from "@/lib/notifications/realtime";
+
 import DashboardUserAvatar from "@/components/account/DashboardUserAvatar";
+import { createClient } from "@/lib/supabase/client";
+import DashboardHeader, {
+  DashboardNotification,
+} from "./DashboardHeader";
 
-type ExpenseTrend={current:number;previous:number;percentChange:number|null;monthlyValues:number[]};
-type Followed={id:string;representative_external_id:string;representative_source:string;representative_name:string;representative_office:string|null;representative_state:string|null;created_at:string;photoUrl:string|null;expenseTrend:ExpenseTrend|null};
-type Props={displayName?:string;email?:string;unreadNotifications?:number;notifications?:DashboardNotification[];followedMandates?:Followed[]};
+type ExpenseTrend = {
+  current: number;
+  previous: number;
+  percentChange: number | null;
+  monthlyValues: number[];
+};
 
-function moneyCompact(value:number){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL",notation:"compact",maximumFractionDigits:1}).format(value)}
-function Trend({trend,onOpen}:{trend:ExpenseTrend|null;onOpen:()=>void}){
- if(!trend)return <button type="button" className="followed-expense-trend is-unavailable" onClick={(event)=>{event.stopPropagation();onOpen()}} aria-label="Abrir despesas CEAP deste mandato"><small>DESPESAS CEAP</small><strong>—</strong><span>Dados insuficientes</span></button>;
- const pct=trend.percentChange;
- const direction=pct===null?"neutral":pct>0.05?"up":pct<-.05?"down":"neutral";
- const max=Math.max(...trend.monthlyValues,1);
- const label=pct===null?"Sem base anterior":`${pct>0?"+":""}${pct.toLocaleString("pt-BR",{maximumFractionDigits:1})}%`;
- return <button type="button" className={`followed-expense-trend is-${direction}`} onClick={(event)=>{event.stopPropagation();onOpen()}} aria-label="Abrir despesas CEAP deste mandato"><div className="expense-trend-label"><small>DESPESAS CEAP</small><span className="expense-trend-info" role="button" tabIndex={0} aria-label="Como a tendência de despesas é calculada" onClick={(event)=>{event.preventDefault();event.stopPropagation()}} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();event.stopPropagation()}}}><Info size={9}/><span className="expense-trend-tooltip" role="tooltip">Variação das despesas CEAP registradas nos últimos 3 meses completos em comparação com os 3 meses completos anteriores. A variação não representa avaliação de desempenho.</span></span></div><div className="expense-trend-main">{direction==="up"?<ArrowUpRight size={14}/>:direction==="down"?<ArrowDownRight size={14}/>:<Minus size={14}/>}<strong>{label}</strong><span>{moneyCompact(trend.current)}</span></div><div className="expense-sparkline" aria-hidden="true">{trend.monthlyValues.map((value,index)=><i key={index} style={{height:`${Math.max(3,(value/max)*18)}px`}}/>)}</div><span>últimos 3 meses · vs. 3 anteriores</span></button>;
+type Followed = {
+  id: string;
+  representative_external_id: string;
+  representative_source: string;
+  representative_name: string;
+  representative_office: string | null;
+  representative_state: string | null;
+  created_at: string;
+  photoUrl: string | null;
+  expenseTrend: ExpenseTrend | null;
+};
+
+type Props = {
+  displayName?: string;
+  email?: string;
+  unreadNotifications?: number;
+  notifications?: DashboardNotification[];
+  followedMandates?: Followed[];
+};
+
+function moneyCompact(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
 }
 
-export default function DashboardShell(props:Props={}){
- const router=useRouter();
- const [loading,setLoading]=useState(true);
- const [displayName,setDisplayName]=useState(props.displayName??"");
-  const firstName = displayName.trim().split(/\s+/)[0] || "você";
- const [email,setEmail]=useState(props.email??"");
- const [notifications,setNotifications]=useState<DashboardNotification[]>(props.notifications??[]);
- const [unreadNotifications,setUnreadNotifications]=useState(props.unreadNotifications??0);
- const [followedMandates,setFollowedMandates]=useState<Followed[]>(props.followedMandates??[]);
- const [followedPage,setFollowedPage]=useState(0);
+function Trend({
+  trend,
+  onOpen,
+}: {
+  trend: ExpenseTrend | null;
+  onOpen: () => void;
+}) {
+  if (!trend) {
+    return (
+      <button
+        type="button"
+        className="followed-expense-trend is-unavailable"
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpen();
+        }}
+        aria-label="Abrir despesas CEAP deste mandato"
+      >
+        <small>DESPESAS CEAP</small>
+        <strong>—</strong>
+        <span>Dados insuficientes</span>
+      </button>
+    );
+  }
 
- const FOLLOWED_PAGE_SIZE=4;
- const followedPageCount=Math.max(1,Math.ceil(followedMandates.length/FOLLOWED_PAGE_SIZE));
- const visibleFollowedMandates=followedMandates.slice(
-  followedPage*FOLLOWED_PAGE_SIZE,
-  followedPage*FOLLOWED_PAGE_SIZE+FOLLOWED_PAGE_SIZE,
- );
- const canGoFollowedPrev=followedPage>0;
- const canGoFollowedNext=followedPage<followedPageCount-1;
+  const pct = trend.percentChange;
 
- useEffect(()=>{
-  setFollowedPage(current=>Math.min(current,followedPageCount-1));
- },[followedPageCount]);
+  const direction =
+    pct === null
+      ? "neutral"
+      : pct > 0.05
+        ? "up"
+        : pct < -0.05
+          ? "down"
+          : "neutral";
 
+  const max = Math.max(...trend.monthlyValues, 1);
 
- /* BRASIVO_MANDATE_NOTIFICATIONS_REALTIME_V6 */
- useEffect(()=>{
-  const supabase=createClient();
-  let channel:any=null;
-  let alive=true;
-  (async()=>{
-   const {data:{session}}=await supabase.auth.getSession();
-   const user=session?.user;
-   if(!alive||!user)return;
-   channel=subscribeToMandateNotifications({supabase,userId:user.id,onInsert:(item)=>{
-    if(!alive)return;
-    setNotifications(current=>{if(current.some(existing=>existing.id===item.id))return current;return [item,...current].slice(0,12)});
-    if(!item.readAt)setUnreadNotifications(current=>current+1);
-   }});
-  })();
-  return()=>{alive=false;if(channel)supabase.removeChannel(channel)};
- },[]);
+  const label =
+    pct === null
+      ? "Sem base anterior"
+      : `${pct > 0 ? "+" : ""}${pct.toLocaleString("pt-BR", {
+          maximumFractionDigits: 1,
+        })}%`;
 
+  return (
+    <button
+      type="button"
+      className={`followed-expense-trend is-${direction}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        onOpen();
+      }}
+      aria-label="Abrir despesas CEAP deste mandato"
+    >
+      <div className="expense-trend-label">
+        <small>DESPESAS CEAP</small>
 
- useEffect(()=>{
-  if(props.displayName){setLoading(false);return}
-  let active=true;
-  const supabase=createClient();
-  (async()=>{
-   const {data:{session}}=await supabase.auth.getSession();
-   const user=session?.user;
-   if(!active)return;
-   if(!user){router.replace("/login?next=/dashboard");return}
+        <span
+          className="expense-trend-info"
+          role="button"
+          tabIndex={0}
+          aria-label="Como a tendência de despesas é calculada"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              event.stopPropagation();
+            }
+          }}
+        >
+          <Info size={9} />
 
-   const userEmail=user.email??"";
-   const [{data:profile},{data:notificationRows},{data:followedRows}]=await Promise.all([
-    supabase.from("profiles").select("display_name").eq("user_id",user.id).maybeSingle(),
-    supabase.from("notifications").select("id,title,message,source_url,occurred_at,created_at,read_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(12),
-    supabase.from("representative_follows").select("id,representative_external_id,representative_source,representative_name,representative_office,representative_state,created_at").eq("user_id",user.id).order("created_at",{ascending:false}),
-   ]);
-   if(!active)return;
+          <span
+            className="expense-trend-tooltip"
+            role="tooltip"
+          >
+            Variação das despesas CEAP registradas nos últimos
+            3 meses completos em comparação com os 3 meses
+            completos anteriores. A variação não representa
+            avaliação de desempenho.
+          </span>
+        </span>
+      </div>
 
-   const meta=typeof user.user_metadata?.name==="string"?user.user_metadata.name:"";
-   const name=profile?.display_name||meta||userEmail.split("@")[0]||"você";
-   const mappedNotifications=(notificationRows??[]).map(row=>({id:row.id,title:row.title,message:row.message,sourceUrl:row.source_url,occurredAt:row.occurred_at,createdAt:row.created_at,readAt:row.read_at}));
-   const base=(followedRows??[]).map(row=>({...row,photoUrl:null,expenseTrend:null})) as Followed[];
-   setEmail(userEmail);setDisplayName(name);setNotifications(mappedNotifications);setUnreadNotifications(mappedNotifications.filter(item=>!item.readAt).length);setFollowedMandates(base);setLoading(false);
+      <div className="expense-trend-main">
+        {direction === "up" ? (
+          <ArrowUpRight size={14} />
+        ) : direction === "down" ? (
+          <ArrowDownRight size={14} />
+        ) : (
+          <Minus size={14} />
+        )}
 
-   // Enrichment is intentionally non-blocking: the dashboard is already usable.
-   try{
-    const repsResponse=await fetch("/api/representatives");
-    const repsPayload=await repsResponse.json();
-    if(active&&repsResponse.ok&&Array.isArray(repsPayload.representatives)){
-     const photos=new Map(repsPayload.representatives.map((r:{id:number|string;photoUrl:string|null})=>[String(r.id),r.photoUrl]));
-     setFollowedMandates(current=>current.map(item=>({...item,photoUrl:item.representative_source==="camara"?(photos.get(String(item.representative_external_id)) as string|null|undefined)??null:null})));
-    }
-   }catch{}
+        <strong>{label}</strong>
+        <span>{moneyCompact(trend.current)}</span>
+      </div>
 
-   const now=new Date();
-   const monthRefs=Array.from({length:6},(_,index)=>{const date=new Date(now.getFullYear(),now.getMonth()-1-index,1);return {year:date.getFullYear(),month:date.getMonth()+1}}).reverse();
-   const years=[...new Set(monthRefs.map(item=>item.year))];
-   // BRASIVO_DASHBOARD_EXPENSE_THROTTLE_V6_2
-   for (const item of base) {
-    if(item.representative_source!=="camara")return;
-    try{
-     const responses=await Promise.all(years.map(year=>fetch(`/api/mandates/${item.representative_external_id}/expenses?year=${year}`)));
-     if(responses.some(response=>!response.ok))return;
-     const summaries=await Promise.all(responses.map(response=>response.json()));
-     if(summaries.some(summary=>summary.status!=="available"))return;
-     const byYear=new Map(summaries.map(summary=>[summary.year,summary]));
-     const monthlyValues=monthRefs.map(({year,month})=>byYear.get(year)?.months?.find((entry:{month:number;value:number})=>entry.month===month)?.value??0);
-     const previous=monthlyValues.slice(0,3).reduce((sum,value)=>sum+value,0);
-     const current=monthlyValues.slice(3).reduce((sum,value)=>sum+value,0);
-     const expenseTrend={current,previous,percentChange:previous>0?((current-previous)/previous)*100:null,monthlyValues};
-     if(active)setFollowedMandates(currentItems=>currentItems.map(currentItem=>currentItem.id===item.id?{...currentItem,expenseTrend}:currentItem));
-    }catch{}
-   }
-  })();
-  return()=>{active=false};
- },[props.displayName,router]);
+      <div
+        className="expense-sparkline"
+        aria-hidden="true"
+      >
+        {trend.monthlyValues.map((value, index) => (
+          <i
+            key={index}
+            style={{
+              height: `${Math.max(
+                3,
+                (value / max) * 18,
+              )}px`,
+            }}
+          />
+        ))}
+      </div>
 
- return <main className="dashboard-page"><DashboardHeader displayName={displayName} email={email} notifications={notifications} unreadNotifications={unreadNotifications}/><section className="dashboard-content">
-    <div className="dashboard-welcome">
-      <div className="dashboard-welcome-user">
-        <DashboardUserAvatar />
+      <span>últimos 3 meses · vs. 3 anteriores</span>
+    </button>
+  );
+}
 
-        <div>
-          <span className="dashboard-kicker">PAINEL PESSOAL</span>
-          <h1>Olá, {firstName}.</h1>
-          <p>
-            Acompanhe mandatos e concentre em um só lugar as atualizações públicas que você decidiu seguir.
-          </p>
+function DashboardSkeleton() {
+  return (
+    <main
+      className="dashboard-page dashboard-loading-page"
+      aria-busy="true"
+      aria-label="Carregando dashboard"
+    >
+      <div className="dashboard-loading-header">
+        <div className="dashboard-loading-brand">
+          <span className="dashboard-skeleton dashboard-skeleton-brand" />
+        </div>
+
+        <div className="dashboard-loading-header-actions">
+          <span className="dashboard-skeleton dashboard-skeleton-header-button" />
+          <span className="dashboard-skeleton dashboard-skeleton-avatar" />
         </div>
       </div>
 
-      <div className="dashboard-status">
-        <ShieldCheck size={14} />
-        <span>Dados de fontes oficiais</span>
-      </div>
-    </div>
+      <section className="dashboard-content">
+        <div className="dashboard-welcome dashboard-loading-welcome">
+          <div>
+            <span className="dashboard-skeleton dashboard-skeleton-kicker" />
+            <span className="dashboard-skeleton dashboard-skeleton-title" />
+            <span className="dashboard-skeleton dashboard-skeleton-subtitle" />
+          </div>
 
-    <div className="dashboard-layout"><section className="dashboard-main-column"><article className="dashboard-panel dashboard-panel-primary"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><UserRound size={18}/></div><div><small>ACOMPANHAMENTO</small><h2>Mandatos que você acompanha</h2></div></div><div className={pagerStyles.headerActions} data-dashboard-followed-pager-v1>
-  {followedMandates.length>FOLLOWED_PAGE_SIZE&&(
-    <div className={pagerStyles.pager} aria-label="Navegar entre mandatos acompanhados">
-      <button
-        type="button"
-        className={pagerStyles.arrowButton}
-        onClick={()=>setFollowedPage(current=>Math.max(0,current-1))}
-        disabled={!canGoFollowedPrev}
-        aria-label="Mostrar mandatos anteriores"
-        title="Mandatos anteriores"
-      >
-        <ChevronLeft size={16}/>
-      </button>
+          <span className="dashboard-skeleton dashboard-skeleton-status" />
+        </div>
 
-      <button
-        type="button"
-        className={pagerStyles.arrowButton}
-        onClick={()=>setFollowedPage(current=>Math.min(followedPageCount-1,current+1))}
-        disabled={!canGoFollowedNext}
-        aria-label="Mostrar próximos mandatos"
-        title="Próximos mandatos"
-      >
-        <ChevronRight size={16}/>
-      </button>
-    </div>
-  )}
+        <div className="dashboard-layout">
+          <section className="dashboard-main-column">
+            <article className="dashboard-panel dashboard-panel-primary dashboard-loading-panel">
+              <div className="dashboard-loading-panel-heading">
+                <span className="dashboard-skeleton dashboard-skeleton-panel-icon" />
 
-  <Link className="panel-heading-link" href="/#map">Explorar <ArrowRight size={14}/></Link>
-</div></div>
- {followedMandates.length?<div className="followed-list">{visibleFollowedMandates.map(item=><div className="followed-row" key={item.id} role="link" tabIndex={0} onClick={()=>router.push(`/mandate/${item.representative_external_id}`)} onKeyDown={(event)=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();router.push(`/mandate/${item.representative_external_id}`)}}}><div className="followed-row-content">{item.photoUrl?<img className="followed-row-photo" src={item.photoUrl} alt="" aria-hidden="true" loading="lazy"/>:<span className="followed-row-photo followed-row-photo-placeholder" aria-hidden="true"><UserRound size={14}/></span>}<div className="followed-row-copy"><small>{item.representative_office||"Mandato"}</small><strong>{item.representative_name}</strong><span>{item.representative_state||"BR"}</span></div></div><Trend trend={item.expenseTrend} onOpen={()=>router.push(`/mandate/${item.representative_external_id}?tab=expenses`)}/><ArrowRight className="followed-row-arrow" size={15}/></div>)}</div>:<div className="dashboard-empty-state"><div className="empty-orbit"><UserRound size={24}/></div><strong>Nenhum mandato acompanhado</strong><p>Escolha mandatos para transformar este painel em uma visão pessoal da atividade pública.</p><Link className="dashboard-primary-link" href="/#map">Explorar o mapa <ArrowRight size={15}/></Link></div>}</article></section>
- <aside className="dashboard-side-column"><article className="dashboard-panel dashboard-activity-panel"><div className="panel-heading panel-heading-spread"><div className="panel-heading-group"><div className="panel-icon"><Bell size={18}/></div><div><small>LINHA DO TEMPO</small><h2>Atividade recente</h2></div></div><span className="panel-muted-label">Atualizações verificáveis</span></div>{notifications.length?<div className="dashboard-feed">{notifications.slice(0,8).map(n=><div className="dashboard-feed-item" key={n.id}><i/><div><strong>{n.title}</strong>{n.message&&<p>{n.message}</p>}<span>{new Date(n.occurredAt||n.createdAt).toLocaleDateString("pt-BR")}</span></div></div>)}</div>:<div className="dashboard-activity-empty"><span className="activity-empty-dot"/><div><strong>Nenhuma atividade para exibir</strong><p>As atualizações dos mandatos acompanhados serão organizadas aqui em ordem cronológica.</p></div></div>}</article></aside></div></section></main>;
+                <div>
+                  <span className="dashboard-skeleton dashboard-skeleton-panel-kicker" />
+                  <span className="dashboard-skeleton dashboard-skeleton-panel-title" />
+                </div>
+              </div>
+
+              <div className="dashboard-loading-list">
+                {[0, 1, 2, 3].map((item) => (
+                  <div
+                    className="dashboard-loading-row"
+                    key={item}
+                    aria-hidden="true"
+                  >
+                    <div className="dashboard-loading-person">
+                      <span className="dashboard-skeleton dashboard-skeleton-person-photo" />
+
+                      <div className="dashboard-loading-person-copy">
+                        <span className="dashboard-skeleton dashboard-skeleton-person-type" />
+                        <span className="dashboard-skeleton dashboard-skeleton-person-name" />
+                        <span className="dashboard-skeleton dashboard-skeleton-person-state" />
+                      </div>
+                    </div>
+
+                    <div className="dashboard-loading-expense">
+                      <span className="dashboard-skeleton dashboard-skeleton-expense-label" />
+                      <span className="dashboard-skeleton dashboard-skeleton-expense-value" />
+                      <span className="dashboard-skeleton dashboard-skeleton-expense-meta" />
+                    </div>
+
+                    <div
+                      className="dashboard-loading-bars"
+                      aria-hidden="true"
+                    >
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                    </div>
+
+                    <span className="dashboard-skeleton dashboard-skeleton-row-arrow" />
+                  </div>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <aside className="dashboard-side-column">
+            <article className="dashboard-panel dashboard-activity-panel dashboard-loading-panel">
+              <div className="dashboard-loading-panel-heading">
+                <span className="dashboard-skeleton dashboard-skeleton-panel-icon" />
+
+                <div>
+                  <span className="dashboard-skeleton dashboard-skeleton-panel-kicker" />
+                  <span className="dashboard-skeleton dashboard-skeleton-panel-title dashboard-skeleton-panel-title-short" />
+                </div>
+              </div>
+
+              <div className="dashboard-loading-side-content">
+                <span className="dashboard-skeleton dashboard-skeleton-side-line" />
+                <span className="dashboard-skeleton dashboard-skeleton-side-line dashboard-skeleton-side-line-long" />
+                <span className="dashboard-skeleton dashboard-skeleton-side-line dashboard-skeleton-side-line-small" />
+              </div>
+            </article>
+          </aside>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+export default function DashboardShell(
+  props: Props = {},
+) {
+  const router = useRouter();
+
+  /*
+   * IMPORTANTE:
+   *
+   * Todos os Hooks ficam ANTES de qualquer return.
+   * Isso elimina definitivamente o erro:
+   *
+   * "Rendered more hooks than during the previous render"
+   */
+
+  const [displayName, setDisplayName] = useState(
+    props.displayName ?? "",
+  );
+
+  const [email, setEmail] = useState(
+    props.email ?? "",
+  );
+
+  const [notifications, setNotifications] = useState<
+    DashboardNotification[]
+  >(props.notifications ?? []);
+
+  const [
+    unreadNotifications,
+    setUnreadNotifications,
+  ] = useState(
+    props.unreadNotifications ?? 0,
+  );
+
+  const [
+    followedMandates,
+    setFollowedMandates,
+  ] = useState<Followed[]>(
+    props.followedMandates ?? [],
+  );
+
+  /*
+   * baseReady:
+   *
+   * perfil + notificações + lista de mandatos.
+   */
+  const [baseReady, setBaseReady] = useState(
+    Boolean(props.displayName),
+  );
+
+  /*
+   * profileDataReady:
+   *
+   * fotos + tentativa de carregar CEAP.
+   *
+   * O dashboard NÃO será exibido antes disso.
+   */
+  const [
+    profileDataReady,
+    setProfileDataReady,
+  ] = useState(false);
+
+  /*
+   * ==========================================================
+   * CARREGAMENTO DOS DADOS-BASE
+   * ==========================================================
+   */
+
+  useEffect(() => {
+    if (props.displayName) {
+      setBaseReady(true);
+      return;
+    }
+
+    let mounted = true;
+
+    const supabase = createClient();
+
+    async function loadBase() {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!mounted) return;
+
+        const user = session?.user;
+
+        if (!user) {
+          router.replace(
+            "/login?next=/dashboard",
+          );
+          return;
+        }
+
+        const userEmail =
+          user.email ?? "";
+
+        const [
+          { data: profile },
+          { data: notificationRows },
+          { data: followedRows },
+        ] = await Promise.all([
+          supabase
+            .from("profiles")
+            .select("display_name")
+            .eq("user_id", user.id)
+            .maybeSingle(),
+
+          supabase
+            .from("notifications")
+            .select(
+              [
+                "id",
+                "title",
+                "message",
+                "source_url",
+                "occurred_at",
+                "created_at",
+                "read_at",
+              ].join(","),
+            )
+            .eq("user_id", user.id)
+            .order("created_at", {
+              ascending: false,
+            })
+            .limit(12),
+
+          supabase
+            .from("representative_follows")
+            .select(
+              [
+                "id",
+                "representative_external_id",
+                "representative_source",
+                "representative_name",
+                "representative_office",
+                "representative_state",
+                "created_at",
+              ].join(","),
+            )
+            .eq("user_id", user.id)
+            .order("created_at", {
+              ascending: false,
+            }),
+        ]);
+
+        if (!mounted) return;
+
+        const metadataName =
+          typeof user.user_metadata?.name ===
+          "string"
+            ? user.user_metadata.name
+            : "";
+
+        const resolvedName =
+          profile?.display_name ||
+          metadataName ||
+          userEmail.split("@")[0] ||
+          "você";
+
+        const mappedNotifications =
+          (notificationRows ?? []).map(
+            (row) => ({
+              id: row.id,
+              title: row.title,
+              message: row.message,
+              sourceUrl: row.source_url,
+              occurredAt: row.occurred_at,
+              createdAt: row.created_at,
+              readAt: row.read_at,
+            }),
+          );
+
+        const base =
+          (followedRows ?? []).map(
+            (row) => ({
+              ...row,
+              photoUrl: null,
+              expenseTrend: null,
+            }),
+          ) as Followed[];
+
+        setEmail(userEmail);
+        setDisplayName(resolvedName);
+
+        setNotifications(
+          mappedNotifications,
+        );
+
+        setUnreadNotifications(
+          mappedNotifications.filter(
+            (item) => !item.readAt,
+          ).length,
+        );
+
+        setFollowedMandates(base);
+      } catch (error) {
+        console.error(
+          "[BRASIVO dashboard] Falha ao carregar dados-base:",
+          error,
+        );
+      } finally {
+        /*
+         * mounted está DEFINIDO neste mesmo escopo.
+         *
+         * Não existe mais nenhum `active`
+         * perdido em `.finally()`.
+         */
+        if (mounted) {
+          setBaseReady(true);
+        }
+      }
+    }
+
+    void loadBase();
+
+    return () => {
+      mounted = false;
+    };
+  }, [props.displayName, router]);
+
+  /*
+   * ==========================================================
+   * ENRIQUECIMENTO
+   *
+   * Fotos + CEAP.
+   *
+   * Enquanto isso não terminar, permanece skeleton.
+   * ==========================================================
+   */
+
+  useEffect(() => {
+    if (!baseReady) return;
+
+    let mounted = true;
+
+    async function enrichProfiles() {
+      setProfileDataReady(false);
+
+      /*
+       * Conta realmente sem nenhum mandato observado.
+       */
+      if (followedMandates.length === 0) {
+        if (mounted) {
+          setProfileDataReady(true);
+        }
+
+        return;
+      }
+
+      /*
+       * IMPORTANTE:
+       *
+       * snapshot evita que cada setState deste effect
+       * provoque um novo ciclo de enriquecimento.
+       */
+      const base = followedMandates.map(
+        (item) => ({
+          ...item,
+        }),
+      );
+
+      /*
+       * ------------------------------------------------------
+       * FOTOS
+       * ------------------------------------------------------
+       */
+
+      try {
+        const response = await fetch(
+          "/api/representatives",
+          {
+            cache: "no-store",
+          },
+        );
+
+        if (response.ok) {
+          const payload =
+            await response.json();
+
+          if (
+            mounted &&
+            Array.isArray(
+              payload.representatives,
+            )
+          ) {
+            const photos = new Map<
+              string,
+              string | null
+            >(
+              payload.representatives.map(
+                (representative: {
+                  id: string | number;
+                  photoUrl: string | null;
+                }) => [
+                  String(
+                    representative.id,
+                  ),
+                  representative.photoUrl,
+                ],
+              ),
+            );
+
+            setFollowedMandates(
+              (current) =>
+                current.map((item) => ({
+                  ...item,
+                  photoUrl:
+                    item.representative_source ===
+                    "camara"
+                      ? photos.get(
+                          String(
+                            item.representative_external_id,
+                          ),
+                        ) ?? null
+                      : null,
+                })),
+            );
+          }
+        }
+      } catch (error) {
+        console.warn(
+          "[BRASIVO dashboard] Fotos indisponíveis:",
+          error,
+        );
+      }
+
+      /*
+       * ------------------------------------------------------
+       * CEAP
+       * ------------------------------------------------------
+       */
+
+      const now = new Date();
+
+      const monthRefs = Array.from(
+        { length: 6 },
+        (_, index) => {
+          const date = new Date(
+            now.getFullYear(),
+            now.getMonth() -
+              1 -
+              index,
+            1,
+          );
+
+          return {
+            year: date.getFullYear(),
+            month:
+              date.getMonth() + 1,
+          };
+        },
+      ).reverse();
+
+      const years = [
+        ...new Set(
+          monthRefs.map(
+            (item) => item.year,
+          ),
+        ),
+      ];
+
+      /*
+       * Fazemos os mandatos um por vez.
+       *
+       * Isso evita rajadas desnecessárias contra
+       * os endpoints protegidos por rate limit.
+       */
+      for (const item of base) {
+        if (!mounted) return;
+
+        if (
+          item.representative_source !==
+          "camara"
+        ) {
+          continue;
+        }
+
+        try {
+          const responses =
+            await Promise.all(
+              years.map((year) =>
+                fetch(
+                  `/api/mandates/${item.representative_external_id}/expenses?year=${year}`,
+                  {
+                    cache: "no-store",
+                  },
+                ),
+              ),
+            );
+
+          if (
+            responses.some(
+              (response) =>
+                !response.ok,
+            )
+          ) {
+            continue;
+          }
+
+          const summaries =
+            await Promise.all(
+              responses.map(
+                (response) =>
+                  response.json(),
+              ),
+            );
+
+          if (
+            summaries.some(
+              (summary) =>
+                summary.status !==
+                "available",
+            )
+          ) {
+            continue;
+          }
+
+          const byYear = new Map(
+            summaries.map(
+              (summary) => [
+                summary.year,
+                summary,
+              ],
+            ),
+          );
+
+          const monthlyValues =
+            monthRefs.map(
+              ({
+                year,
+                month,
+              }) =>
+                byYear
+                  .get(year)
+                  ?.months?.find(
+                    (entry: {
+                      month: number;
+                      value: number;
+                    }) =>
+                      entry.month ===
+                      month,
+                  )?.value ?? 0,
+            );
+
+          const previous =
+            monthlyValues
+              .slice(0, 3)
+              .reduce(
+                (
+                  sum,
+                  value,
+                ) =>
+                  sum + value,
+                0,
+              );
+
+          const current =
+            monthlyValues
+              .slice(3)
+              .reduce(
+                (
+                  sum,
+                  value,
+                ) =>
+                  sum + value,
+                0,
+              );
+
+          const expenseTrend: ExpenseTrend =
+            {
+              current,
+              previous,
+              percentChange:
+                previous > 0
+                  ? ((current -
+                      previous) /
+                      previous) *
+                    100
+                  : null,
+              monthlyValues,
+            };
+
+          if (!mounted) return;
+
+          setFollowedMandates(
+            (currentItems) =>
+              currentItems.map(
+                (currentItem) =>
+                  currentItem.id ===
+                  item.id
+                    ? {
+                        ...currentItem,
+                        expenseTrend,
+                      }
+                    : currentItem,
+              ),
+          );
+        } catch (error) {
+          console.warn(
+            `[BRASIVO dashboard] CEAP indisponível para ${item.representative_external_id}:`,
+            error,
+          );
+        }
+      }
+
+      if (mounted) {
+        /*
+         * Somente aqui liberamos o dashboard.
+         *
+         * Não existe mais flash de:
+         *
+         * - foto vazia;
+         * - "Dados insuficientes";
+         * - card incompleto.
+         */
+        setProfileDataReady(true);
+      }
+    }
+
+    void enrichProfiles();
+
+    return () => {
+      mounted = false;
+    };
+
+    /*
+     * Não usamos `followedMandates` nas dependências
+     * propositalmente.
+     *
+     * O effect deve iniciar quando os dados-base
+     * terminarem, e não toda vez que a foto/trend
+     * atualizar o estado.
+     */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseReady]);
+
+  /*
+   * ==========================================================
+   * TODOS OS HOOKS TERMINAM ACIMA.
+   *
+   * Só agora existe return condicional.
+   * ==========================================================
+   */
+
+  const loading =
+    !baseReady ||
+    !profileDataReady;
+
+  const firstName =
+    displayName
+      .trim()
+      .split(/\s+/)[0] ||
+    "você";
+
+  if (loading) {
+    return <DashboardSkeleton />;
+  }
+
+  return (
+    <main className="dashboard-page">
+      <DashboardHeader
+        displayName={displayName}
+        email={email}
+        notifications={notifications}
+        unreadNotifications={
+          unreadNotifications
+        }
+      />
+
+      <section className="dashboard-content">
+        <div className="dashboard-welcome">
+          <div className="dashboard-welcome-user">
+            <DashboardUserAvatar />
+
+            <div>
+              <span className="dashboard-kicker">
+                PAINEL PESSOAL
+              </span>
+
+              <h1>
+                Olá, {firstName}.
+              </h1>
+
+              <p>
+                Observe mandatos e
+                concentre em um só lugar
+                as atualizações públicas
+                que você decidiu observar.
+              </p>
+            </div>
+          </div>
+
+          <div className="dashboard-status">
+            <ShieldCheck size={14} />
+            <span>
+              Dados de fontes oficiais
+            </span>
+          </div>
+        </div>
+
+        <div className="dashboard-layout">
+          <section className="dashboard-main-column">
+            <article className="dashboard-panel dashboard-panel-primary">
+              <div className="panel-heading panel-heading-spread">
+                <div className="panel-heading-group">
+                  <div className="panel-icon">
+                    <UserRound
+                      size={18}
+                    />
+                  </div>
+
+                  <div>
+                    <small>
+                      OBSERVAÇÃO
+                    </small>
+
+                    <h2>
+                      Mandatos que você
+                      observa
+                    </h2>
+                  </div>
+                </div>
+
+                <Link
+                  className="panel-heading-link"
+                  href="/#map"
+                >
+                  Explorar
+                  <ArrowRight
+                    size={14}
+                  />
+                </Link>
+              </div>
+
+              {followedMandates.length ? (
+                <div className="followed-list">
+                  {followedMandates.map(
+                    (item) => (
+                      <div
+                        className="followed-row"
+                        key={item.id}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() =>
+                          router.push(
+                            `/mandate/${item.representative_external_id}`,
+                          )
+                        }
+                        onKeyDown={(
+                          event,
+                        ) => {
+                          if (
+                            event.key ===
+                              "Enter" ||
+                            event.key ===
+                              " "
+                          ) {
+                            event.preventDefault();
+
+                            router.push(
+                              `/mandate/${item.representative_external_id}`,
+                            );
+                          }
+                        }}
+                      >
+                        <div className="followed-row-content">
+                          {item.photoUrl ? (
+                            <img
+                              className="followed-row-photo"
+                              src={
+                                item.photoUrl
+                              }
+                              alt=""
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <span
+                              className="followed-row-photo followed-row-photo-placeholder"
+                              aria-hidden="true"
+                            >
+                              <UserRound
+                                size={
+                                  14
+                                }
+                              />
+                            </span>
+                          )}
+
+                          <div className="followed-row-copy">
+                            <small>
+                              {item.representative_office ||
+                                "Mandato"}
+                            </small>
+
+                            <strong>
+                              {
+                                item.representative_name
+                              }
+                            </strong>
+
+                            <span>
+                              {item.representative_state ||
+                                "BR"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Trend
+                          trend={
+                            item.expenseTrend
+                          }
+                          onOpen={() =>
+                            router.push(
+                              `/mandate/${item.representative_external_id}?tab=expenses`,
+                            )
+                          }
+                        />
+
+                        <ArrowRight
+                          className="followed-row-arrow"
+                          size={15}
+                        />
+                      </div>
+                    ),
+                  )}
+                </div>
+              ) : (
+                <div className="dashboard-empty-state">
+                  <div className="empty-orbit">
+                    <UserRound
+                      size={24}
+                    />
+                  </div>
+
+                  <strong>
+                    Nenhum mandato
+                    observado
+                  </strong>
+
+                  <p>
+                    Escolha mandatos para
+                    transformar este painel
+                    em uma visão pessoal da
+                    atividade pública.
+                  </p>
+
+                  <Link
+                    className="dashboard-primary-link"
+                    href="/#map"
+                  >
+                    Explorar o mapa
+                    <ArrowRight
+                      size={15}
+                    />
+                  </Link>
+                </div>
+              )}
+            </article>
+          </section>
+
+          <aside className="dashboard-side-column">
+            <article className="dashboard-panel dashboard-activity-panel">
+              <div className="panel-heading panel-heading-spread">
+                <div className="panel-heading-group">
+                  <div className="panel-icon">
+                    <Bell size={18} />
+                  </div>
+
+                  <div>
+                    <small>
+                      LINHA DO TEMPO
+                    </small>
+
+                    <h2>
+                      Atividade recente
+                    </h2>
+                  </div>
+                </div>
+
+                <span className="panel-muted-label">
+                  Atualizações verificáveis
+                </span>
+              </div>
+
+              {notifications.length ? (
+                <div className="dashboard-feed">
+                  {notifications
+                    .slice(0, 8)
+                    .map(
+                      (
+                        notification,
+                      ) => (
+                        <div
+                          className="dashboard-feed-item"
+                          key={
+                            notification.id
+                          }
+                        >
+                          <i />
+
+                          <div>
+                            <strong>
+                              {
+                                notification.title
+                              }
+                            </strong>
+
+                            {notification.message && (
+                              <p>
+                                {
+                                  notification.message
+                                }
+                              </p>
+                            )}
+
+                            <span>
+                              {new Date(
+                                notification.occurredAt ||
+                                  notification.createdAt,
+                              ).toLocaleDateString(
+                                "pt-BR",
+                              )}
+                            </span>
+                          </div>
+                        </div>
+                      ),
+                    )}
+                </div>
+              ) : (
+                <div className="dashboard-activity-empty">
+                  <span className="activity-empty-dot" />
+
+                  <div>
+                    <strong>
+                      Nenhuma atividade para
+                      exibir
+                    </strong>
+
+                    <p>
+                      As atualizações dos
+                      mandatos observados serão
+                      organizadas aqui em ordem
+                      cronológica.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </article>
+          </aside>
+        </div>
+      </section>
+    </main>
+  );
 }

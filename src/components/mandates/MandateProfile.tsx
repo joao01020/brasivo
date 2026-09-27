@@ -45,9 +45,9 @@ type Mandate = {
 };
 
 function followLabel(count: number) {
-  if (count === 0) return "Seja o primeiro a acompanhar";
-  if (count === 1) return "1 pessoa acompanha este mandato";
-  return `${count.toLocaleString("pt-BR")} pessoas acompanham este mandato`;
+  if (count === 0) return "Seja o primeiro a observar";
+  if (count === 1) return "1 pessoa observa este mandato";
+  return `${count.toLocaleString("pt-BR")} pessoas observam este mandato`;
 }
 
 export default function MandateProfile({ id }: { id: string }) {
@@ -56,6 +56,7 @@ export default function MandateProfile({ id }: { id: string }) {
   const [loading, setLoading] = useState(true);
   const [following, setFollowing] = useState(false);
   const [followBusy, setFollowBusy] = useState(false);
+  const [followFeedback, setFollowFeedback] = useState(false);
   const [signed, setSigned] = useState(false);
   const [followCount, setFollowCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"activity" | "expenses" | "projects">(() => searchParams.get("tab") === "expenses" ? "expenses" : searchParams.get("tab") === "projects" ? "projects" : "activity");
@@ -163,6 +164,12 @@ export default function MandateProfile({ id }: { id: string }) {
         );
         if (!error) {
           setFollowing(true);
+
+        setFollowFeedback(true);
+
+        window.setTimeout(() => {
+          setFollowFeedback(false);
+        }, 1200);
           setFollowCount((current) => current === null ? null : current + 1);
           const refreshed = await fetch(`/api/mandates/${id}/followers`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null);
           if (refreshed?.available) setFollowCount(Number(refreshed.count ?? 0));
@@ -189,11 +196,50 @@ export default function MandateProfile({ id }: { id: string }) {
           <div className="profile-hero-copy">
             <span>{mandate.office.toUpperCase()} · {mandate.state}</span>
             <h1>{mandate.name}</h1>
-            <p>{mandate.party}{mandate.status ? ` · ${mandate.status}` : ""}</p>
+            <div className="mandate-status-row">
+            <span className="mandate-status-party">
+              {mandate.party}
+            </span>
+
+            <span
+              className="mandate-status-dot"
+              aria-hidden="true"
+            />
+
+            <span className="mandate-status-text">
+              Ativo
+            </span>
+          </div>
             <div className="profile-actions">
-              <button className={following ? "follow-button is-following" : "follow-button"} disabled={followBusy} onClick={toggleFollowing}>
-                {following ? <BellRing size={16} /> : <BellPlus size={16} />}
-                {followBusy ? "Aguarde…" : following ? "Acompanhando" : "Acompanhar"}
+              <button
+                className={[
+                  "follow-button",
+                  following ? "is-following" : "",
+                  followFeedback ? "is-follow-feedback" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                disabled={followBusy}
+                onClick={toggleFollowing}
+              >
+                <span
+                  className="follow-button-bell"
+                  aria-hidden="true"
+                >
+                  {following ? (
+                    <BellRing size={16} />
+                  ) : (
+                    <BellPlus size={16} />
+                  )}
+                </span>
+
+                <span className="follow-button-label">
+                  {followBusy
+                    ? "Aguarde…"
+                    : following
+                      ? "Observando"
+                      : "Acompanhar"}
+                </span>
               </button>
               <a href={mandate.sourceUrl} target="_blank" rel="noreferrer">Fonte oficial <ExternalLink size={14} /></a>
             </div>
@@ -203,10 +249,10 @@ export default function MandateProfile({ id }: { id: string }) {
                   <Users size={14} />
                   <span>{followLabel(followCount)}</span>
                 </div>
-                <span className="mandate-follow-info" tabIndex={0} aria-label="Sobre a contagem de acompanhamentos">
+                <span className="mandate-follow-info" tabIndex={0} aria-label="Sobre a contagem de observações">
                   <CircleHelp size={15} />
                   <span className="mandate-follow-tooltip" role="tooltip">
-                    Quantidade de contas do BRASIVO que escolheram acompanhar atualizações deste mandato. Acompanhar não representa apoio, aprovação ou intenção de voto.
+                    Quantidade de contas do BRASIVO que escolheram observar atualizações deste mandato. Observar não representa apoio, aprovação ou intenção de voto.
                   </span>
                 </span>
               </div>
