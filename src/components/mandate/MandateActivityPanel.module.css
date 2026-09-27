@@ -326,3 +326,389 @@
   .metric:last-child { border-bottom: 0; }
   .tooltip { left: 0; right: auto; }
 }
+
+/* ===== BRASIVO ACTIVITY STRUCTURAL SKELETON V2 ===== */
+
+/*
+ * Skeleton estrutural da aba Atividade.
+ *
+ * Ele replica a geometria do conteúdo final para impedir o
+ * estado intermediário vazio entre o skeleton geral do perfil
+ * e a resposta da API de atividade.
+ */
+
+.activitySkeleton {
+  width: 100%;
+  min-height: 420px;
+
+  --activity-sk-base: rgba(18, 34, 38, 0.88);
+  --activity-sk-mid: rgba(27, 48, 51, 0.94);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+
+.activitySkeletonLine,
+.activitySkeletonSmallIcon,
+.activitySkeletonRecordIcon {
+  position: relative;
+  display: block;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      90deg,
+      var(--activity-sk-base),
+      var(--activity-sk-mid),
+      var(--activity-sk-base)
+    );
+
+  border-radius: 999px;
+}
+
+.activitySkeletonLine::after,
+.activitySkeletonSmallIcon::after,
+.activitySkeletonRecordIcon::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  transform: translateX(-135%);
+
+  background:
+    linear-gradient(
+      100deg,
+      transparent 16%,
+      rgba(255, 255, 255, 0.018) 34%,
+      rgba(136, 196, 177, 0.09) 50%,
+      rgba(255, 255, 255, 0.018) 66%,
+      transparent 84%
+    );
+
+  animation:
+    brasivoActivitySkeletonSweep
+    1.75s
+    cubic-bezier(.4, 0, .2, 1)
+    infinite;
+}
+
+@keyframes brasivoActivitySkeletonSweep {
+  0% {
+    transform: translateX(-135%);
+  }
+
+  58%,
+  100% {
+    transform: translateX(135%);
+  }
+}
+
+/* ============================================================
+   ANO
+   ============================================================ */
+
+.activitySkeletonYear {
+  min-height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom:
+    1px solid rgba(97, 132, 128, 0.14);
+}
+
+.activitySkeletonYearLabel {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+}
+
+.activitySkeletonSmallIcon {
+  width: 13px;
+  height: 13px;
+
+  border-radius: 4px;
+}
+
+.activitySkeletonYearText {
+  width: 82px;
+  height: 6px;
+}
+
+.activitySkeletonYears {
+  min-width: 238px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+
+  padding: 4px;
+
+  border:
+    1px solid rgba(96, 132, 128, 0.16);
+
+  border-radius: 10px;
+}
+
+.activitySkeletonYears > span {
+  width: 30px;
+  height: 6px;
+
+  display: block;
+
+  border-radius: 999px;
+
+  background:
+    var(--activity-sk-base);
+}
+
+.activitySkeletonYears
+.activitySkeletonYearActive {
+  width: 50px;
+  height: 29px;
+
+  border:
+    1px solid rgba(34, 216, 123, 0.20);
+
+  border-radius: 8px;
+
+  background:
+    rgba(25, 82, 55, 0.18);
+}
+
+/* ============================================================
+   MÉTRICAS
+   ============================================================ */
+
+.activitySkeletonMetrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  border-bottom:
+    1px solid rgba(97, 132, 128, 0.14);
+}
+
+.activitySkeletonMetric {
+  min-height: 109px;
+
+  display: flex;
+  flex-direction: column;
+
+  justify-content: center;
+
+  gap: 13px;
+
+  padding: 18px 18px 18px 0;
+}
+
+.activitySkeletonMetric
++ .activitySkeletonMetric {
+  padding-left: 18px;
+
+  border-left:
+    1px solid rgba(97, 132, 128, 0.14);
+}
+
+.activitySkeletonMetricLabel {
+  width: 98px;
+  height: 6px;
+}
+
+.activitySkeletonMetricValue {
+  width: 62px;
+  height: 22px;
+
+  border-radius: 5px;
+}
+
+.activitySkeletonMetricCaption {
+  width: 128px;
+  height: 6px;
+}
+
+/* ============================================================
+   PERÍODO
+   ============================================================ */
+
+.activitySkeletonPeriod {
+  min-height: 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom:
+    1px solid rgba(97, 132, 128, 0.14);
+}
+
+.activitySkeletonPeriodText {
+  width: 194px;
+  height: 5px;
+}
+
+.activitySkeletonMethod {
+  width: 126px;
+  height: 5px;
+}
+
+/* ============================================================
+   CABEÇALHO DOS REGISTROS
+   ============================================================ */
+
+.activitySkeletonListHeader {
+  min-height: 91px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  border-bottom:
+    1px solid rgba(97, 132, 128, 0.14);
+}
+
+.activitySkeletonListHeader > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 11px;
+}
+
+.activitySkeletonKicker {
+  width: 105px;
+  height: 6px;
+}
+
+.activitySkeletonHeading {
+  width: 178px;
+  height: 11px;
+}
+
+.activitySkeletonCount {
+  width: 48px;
+  height: 5px;
+}
+
+/* ============================================================
+   REGISTROS
+   ============================================================ */
+
+.activitySkeletonRecord {
+  min-height: 153px;
+
+  display: flex;
+
+  gap: 16px;
+
+  padding: 20px 0;
+
+  border-bottom:
+    1px solid rgba(97, 132, 128, 0.14);
+}
+
+.activitySkeletonRecordIcon {
+  width: 31px;
+  height: 31px;
+
+  flex: 0 0 31px;
+
+  border-radius: 9px;
+}
+
+.activitySkeletonRecordContent {
+  min-width: 0;
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+.activitySkeletonRecordMeta {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+.activitySkeletonRecordType {
+  width: 58px;
+  height: 6px;
+}
+
+.activitySkeletonRecordDate {
+  width: 104px;
+  height: 6px;
+}
+
+.activitySkeletonRecordTitle {
+  width: 190px;
+  height: 11px;
+}
+
+.activitySkeletonRecordDescriptionLong {
+  width: 92%;
+  height: 6px;
+}
+
+.activitySkeletonRecordDescription {
+  width: 74%;
+  height: 6px;
+}
+
+.activitySkeletonRecordSource {
+  width: 91px;
+  height: 6px;
+
+  margin-top: 5px;
+}
+
+/* ============================================================
+   RESPONSIVO
+   ============================================================ */
+
+@media (max-width: 720px) {
+  .activitySkeletonMetrics {
+    grid-template-columns: 1fr;
+  }
+
+  .activitySkeletonMetric
+  + .activitySkeletonMetric {
+    padding-left: 0;
+
+    border-left: 0;
+
+    border-top:
+      1px solid rgba(97, 132, 128, 0.14);
+  }
+
+  .activitySkeletonYears {
+    min-width: 185px;
+  }
+
+  .activitySkeletonMethod {
+    display: none;
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .activitySkeletonLine::after,
+  .activitySkeletonSmallIcon::after,
+  .activitySkeletonRecordIcon::after {
+    animation: none;
+  }
+}
+
+/* ===== END BRASIVO ACTIVITY STRUCTURAL SKELETON V2 ===== */
