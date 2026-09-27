@@ -1,4 +1,7 @@
 "use client";
+
+import MandateSectionSkeleton from "@/components/mandate/MandateSectionSkeleton";
+
 import { useSearchParams } from "next/navigation";
 
 import {
@@ -7,7 +10,6 @@ import {
   BellRing,
   CalendarDays,
   ExternalLink,
-  LoaderCircle,
   Users,
   CircleHelp,
   Receipt,
@@ -282,7 +284,9 @@ export default function MandateProfile({ id }: { id: string }) {
                   </select>
                 </div>
                 <div className="expense-context"><Info size={14}/><span>Valores da Cota para o Exercício da Atividade Parlamentar (CEAP). O total usa o valor líquido registrado pela Câmara e não representa todos os custos relacionados ao mandato.</span></div>
-                {expensesLoading ? <div className="expense-loading"><LoaderCircle className="spin"/>Consultando despesas oficiais…</div> : expenses ? (
+                {expensesLoading ? (
+                <MandateSectionSkeleton variant="expenses" />
+              ) : expenses ? (
                   <>
                     <div className="expense-summary-grid has-return-card">
                       <div><small>VALOR USADO DA COTA</small><strong>{expenses.status === "available" ? money(expenses.totalNet) : "Indisponível"}</strong><span>{expenseYear}</span></div>

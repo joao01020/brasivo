@@ -1,11 +1,12 @@
 "use client";
 
+import MandateSectionSkeleton from "@/components/mandate/MandateSectionSkeleton";
+
 import {
   CalendarRange,
   ChevronDown,
   ExternalLink,
   Info,
-  LoaderCircle,
   MessageSquareText,
   Vote,
 } from "lucide-react";
@@ -82,6 +83,134 @@ function activityKind(activity: MandateActivity) {
 function activityIcon(activity: MandateActivity) {
   if (activity.type === "vote") return <Vote size={15} />;
   return <MessageSquareText size={15} />;
+}
+
+
+function MandateActivityLoadingSkeleton() {
+  return (
+    <div
+      className={styles.activitySkeleton}
+      aria-busy="true"
+      aria-label="Carregando registros oficiais"
+    >
+      {/* =====================================================
+          ANO DO MANDATO
+          ===================================================== */}
+      <div className={styles.activitySkeletonYear}>
+        <div className={styles.activitySkeletonYearLabel}>
+          <span className={styles.activitySkeletonSmallIcon} />
+          <span
+            className={`${styles.activitySkeletonLine} ${styles.activitySkeletonYearText}`}
+          />
+        </div>
+
+        <div className={styles.activitySkeletonYears}>
+          <span />
+          <span />
+          <span />
+          <span className={styles.activitySkeletonYearActive} />
+        </div>
+      </div>
+
+      {/* =====================================================
+          MÉTRICAS
+          ===================================================== */}
+      <div className={styles.activitySkeletonMetrics}>
+        {[0, 1, 2].map((item) => (
+          <div
+            className={styles.activitySkeletonMetric}
+            key={item}
+          >
+            <span
+              className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMetricLabel}`}
+            />
+
+            <span
+              className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMetricValue}`}
+            />
+
+            <span
+              className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMetricCaption}`}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* =====================================================
+          PERÍODO
+          ===================================================== */}
+      <div className={styles.activitySkeletonPeriod}>
+        <span
+          className={`${styles.activitySkeletonLine} ${styles.activitySkeletonPeriodText}`}
+        />
+
+        <span
+          className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMethod}`}
+        />
+      </div>
+
+      {/* =====================================================
+          CABEÇALHO DA LISTA
+          ===================================================== */}
+      <div className={styles.activitySkeletonListHeader}>
+        <div>
+          <span
+            className={`${styles.activitySkeletonLine} ${styles.activitySkeletonKicker}`}
+          />
+
+          <span
+            className={`${styles.activitySkeletonLine} ${styles.activitySkeletonHeading}`}
+          />
+        </div>
+
+        <span
+          className={`${styles.activitySkeletonLine} ${styles.activitySkeletonCount}`}
+        />
+      </div>
+
+      {/* =====================================================
+          REGISTROS
+          ===================================================== */}
+      <div className={styles.activitySkeletonRecords}>
+        {[0, 1].map((item) => (
+          <div
+            className={styles.activitySkeletonRecord}
+            key={item}
+          >
+            <span className={styles.activitySkeletonRecordIcon} />
+
+            <div className={styles.activitySkeletonRecordContent}>
+              <div className={styles.activitySkeletonRecordMeta}>
+                <span
+                  className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordType}`}
+                />
+
+                <span
+                  className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordDate}`}
+                />
+              </div>
+
+              <span
+                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordTitle}`}
+              />
+
+              <span
+                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordDescriptionLong}`}
+              />
+
+              <span
+                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordDescription}`}
+              />
+
+              <span
+                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordSource}`}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function MandateActivityPanel({ mandateId, year }: Props) {
@@ -184,11 +313,8 @@ export default function MandateActivityPanel({ mandateId, year }: Props) {
       </div>
 
       {loading ? (
-        <div className={styles.loadingState}>
-          <LoaderCircle size={18} className={styles.spinner} />
-          <span>Consultando registros de {selectedYear}…</span>
-        </div>
-      ) : error ? (
+          <MandateSectionSkeleton variant="activity" />
+        ) : error ? (
         <div className={styles.errorState}>{error}</div>
       ) : (
         <>

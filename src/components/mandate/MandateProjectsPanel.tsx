@@ -1,12 +1,13 @@
 "use client";
 
+import MandateSectionSkeleton from "@/components/mandate/MandateSectionSkeleton";
+
 import {
   CheckCircle2,
   ChevronDown,
   ExternalLink,
   FileText,
   Info,
-  LoaderCircle,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type {
@@ -115,7 +116,7 @@ export default function MandateProjectsPanel({ mandateId }: Props) {
       </div>
 
       {loading ? (
-        <div className={styles.state}><LoaderCircle className={styles.spin} size={18} />Consultando projetos oficiais…</div>
+        <MandateSectionSkeleton variant="projects" />
       ) : error ? (
         <div className={styles.state}>{error}</div>
       ) : (
