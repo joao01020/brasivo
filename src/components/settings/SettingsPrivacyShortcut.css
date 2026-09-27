@@ -1,0 +1,56 @@
+
+.settings-nav-legal {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(120, 145, 148, 0.12);
+}
+
+.settings-nav-legal-label {
+  display: block;
+  margin: 0 0 8px 2px;
+  color: rgba(130, 150, 153, 0.56);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.settings-nav-privacy-button {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(66, 211, 137, 0.16);
+  border-radius: 10px;
+  background: rgba(45, 143, 93, 0.055);
+  color: rgba(215, 230, 225, 0.92);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-decoration: none;
+  font-size: 11px;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.settings-nav-privacy-button svg:first-child {
+  color: #43d98c;
+  flex: 0 0 auto;
+}
+
+.settings-nav-privacy-button svg:last-child {
+  margin-left: auto;
+  color: rgba(126, 150, 151, 0.72);
+}
+
+.settings-nav-privacy-button:hover {
+  border-color: rgba(66, 211, 137, 0.32);
+  background: rgba(45, 143, 93, 0.095);
+  color: #edf5f1;
+}
+
+.settings-nav-privacy-button:active {
+  transform: translateY(1px);
+}
