@@ -99,7 +99,6 @@
   box-shadow: inset 0 0 0 1px #23543a;
 }
 
-.loadingState,
 .errorState,
 .emptyState {
   display: flex;
@@ -110,9 +109,7 @@
   font-size: 9px;
 }
 
-.loadingState { gap: 9px; }
 .errorState { color: #c98b8b; }
-.spinner { animation: activitySpin 900ms linear infinite; }
 
 .metrics {
   display: grid;
@@ -304,7 +301,6 @@
 .warnings summary { cursor: pointer; }
 .warnings ul { margin: 8px 0 0; padding-left: 16px; line-height: 1.6; }
 
-@keyframes activitySpin { to { transform: rotate(360deg); } }
 
 @media (max-width: 720px) {
   .summaryHeader,
@@ -327,52 +323,37 @@
   .tooltip { left: 0; right: auto; }
 }
 
-/* ===== BRASIVO ACTIVITY STRUCTURAL SKELETON V2 ===== */
+/* ===== BRASIVO ACTIVITY LOADING SKELETON FINAL ===== */
 
-/*
- * Skeleton estrutural da aba Atividade.
- *
- * Ele replica a geometria do conteúdo final para impedir o
- * estado intermediário vazio entre o skeleton geral do perfil
- * e a resposta da API de atividade.
- */
-
-.activitySkeleton {
+.activityLoadingSkeleton {
   width: 100%;
   min-height: 420px;
 
-  --activity-sk-base: rgba(18, 34, 38, 0.88);
-  --activity-sk-mid: rgba(27, 48, 51, 0.94);
+  --activity-loading-base: rgba(18, 34, 38, 0.95);
+  --activity-loading-mid: rgba(29, 52, 55, 0.98);
+  --activity-loading-shine: rgba(154, 215, 194, 0.10);
 }
 
-/* ============================================================
-   BASE
-   ============================================================ */
-
-.activitySkeletonLine,
-.activitySkeletonSmallIcon,
-.activitySkeletonRecordIcon {
+.activityLoadingLine,
+.activityLoadingRecordIcon {
   position: relative;
   display: block;
-
   overflow: hidden;
 
   background:
     linear-gradient(
       90deg,
-      var(--activity-sk-base),
-      var(--activity-sk-mid),
-      var(--activity-sk-base)
+      var(--activity-loading-base),
+      var(--activity-loading-mid),
+      var(--activity-loading-base)
     );
 
   border-radius: 999px;
 }
 
-.activitySkeletonLine::after,
-.activitySkeletonSmallIcon::after,
-.activitySkeletonRecordIcon::after {
+.activityLoadingLine::after,
+.activityLoadingRecordIcon::after {
   content: "";
-
   position: absolute;
   inset: 0;
 
@@ -382,333 +363,256 @@
     linear-gradient(
       100deg,
       transparent 16%,
-      rgba(255, 255, 255, 0.018) 34%,
-      rgba(136, 196, 177, 0.09) 50%,
-      rgba(255, 255, 255, 0.018) 66%,
+      rgba(255, 255, 255, 0.014) 34%,
+      var(--activity-loading-shine) 50%,
+      rgba(255, 255, 255, 0.014) 66%,
       transparent 84%
     );
 
   animation:
-    brasivoActivitySkeletonSweep
-    1.75s
+    activityLoadingSweep
+    1.65s
     cubic-bezier(.4, 0, .2, 1)
     infinite;
 }
 
-@keyframes brasivoActivitySkeletonSweep {
+@keyframes activityLoadingSweep {
   0% {
     transform: translateX(-135%);
   }
 
-  58%,
+  60%,
   100% {
     transform: translateX(135%);
   }
 }
 
-/* ============================================================
-   ANO
-   ============================================================ */
 
-.activitySkeletonYear {
-  min-height: 62px;
+/* métricas */
 
+.activityLoadingMetrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  border-bottom: 1px solid #142027;
+}
+
+.activityLoadingMetric {
+  min-width: 0;
+  min-height: 108px;
+
+  padding: 20px 18px 18px 0;
+
+  border-right: 1px solid #142027;
+}
+
+.activityLoadingMetric + .activityLoadingMetric {
+  padding-left: 18px;
+}
+
+.activityLoadingMetric:last-child {
+  border-right: 0;
+}
+
+.activityLoadingMetricLabel {
+  width: 100px;
+  height: 7px;
+}
+
+.activityLoadingMetricValue {
+  width: 58px;
+  height: 25px;
+
+  margin-top: 12px;
+
+  border-radius: 6px;
+}
+
+.activityLoadingMetricDescription {
+  width: min(155px, 82%);
+  height: 7px;
+
+  margin-top: 10px;
+}
+
+
+/* período */
+
+.activityLoadingPeriod {
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  border-bottom:
-    1px solid rgba(97, 132, 128, 0.14);
+  gap: 16px;
+
+  min-height: 42px;
+
+  border-bottom: 1px solid #142027;
 }
 
-.activitySkeletonYearLabel {
+.activityLoadingPeriodLeft {
+  width: 210px;
+  height: 6px;
+}
+
+.activityLoadingPeriodRight {
+  width: 125px;
+  height: 6px;
+}
+
+
+/* heading */
+
+.activityLoadingHeading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  min-height: 76px;
+
+  padding: 22px 0 14px;
+
+  border-bottom: 1px solid #142027;
+}
+
+.activityLoadingHeading > div {
+  display: grid;
+  gap: 9px;
+}
+
+.activityLoadingKicker {
+  width: 90px;
+  height: 6px;
+}
+
+.activityLoadingTitle {
+  width: 180px;
+  height: 13px;
+}
+
+.activityLoadingCount {
+  width: 54px;
+  height: 6px;
+}
+
+
+/* registros */
+
+.activityLoadingRecords {
+  width: 100%;
+}
+
+.activityLoadingRecord {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+
+  gap: 12px;
+
+  min-height: 132px;
+
+  padding: 18px 0;
+
+  border-bottom: 1px solid #111d22;
+}
+
+.activityLoadingRecordIcon {
+  width: 30px;
+  height: 30px;
+
+  border: 1px solid #1c3a2d;
+  border-radius: 9px;
+
+  background: #0b1b16;
+}
+
+.activityLoadingRecordBody {
+  min-width: 0;
+}
+
+.activityLoadingRecordMeta {
   display: flex;
   align-items: center;
 
   gap: 9px;
+
+  margin-bottom: 10px;
 }
 
-.activitySkeletonSmallIcon {
-  width: 13px;
-  height: 13px;
-
-  border-radius: 4px;
-}
-
-.activitySkeletonYearText {
-  width: 82px;
-  height: 6px;
-}
-
-.activitySkeletonYears {
-  min-width: 238px;
-  height: 38px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-
-  padding: 4px;
-
-  border:
-    1px solid rgba(96, 132, 128, 0.16);
-
-  border-radius: 10px;
-}
-
-.activitySkeletonYears > span {
-  width: 30px;
-  height: 6px;
-
-  display: block;
-
-  border-radius: 999px;
-
-  background:
-    var(--activity-sk-base);
-}
-
-.activitySkeletonYears
-.activitySkeletonYearActive {
-  width: 50px;
-  height: 29px;
-
-  border:
-    1px solid rgba(34, 216, 123, 0.20);
-
-  border-radius: 8px;
-
-  background:
-    rgba(25, 82, 55, 0.18);
-}
-
-/* ============================================================
-   MÉTRICAS
-   ============================================================ */
-
-.activitySkeletonMetrics {
-  display: grid;
-
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
-
-  border-bottom:
-    1px solid rgba(97, 132, 128, 0.14);
-}
-
-.activitySkeletonMetric {
-  min-height: 109px;
-
-  display: flex;
-  flex-direction: column;
-
-  justify-content: center;
-
-  gap: 13px;
-
-  padding: 18px 18px 18px 0;
-}
-
-.activitySkeletonMetric
-+ .activitySkeletonMetric {
-  padding-left: 18px;
-
-  border-left:
-    1px solid rgba(97, 132, 128, 0.14);
-}
-
-.activitySkeletonMetricLabel {
-  width: 98px;
-  height: 6px;
-}
-
-.activitySkeletonMetricValue {
-  width: 62px;
-  height: 22px;
-
-  border-radius: 5px;
-}
-
-.activitySkeletonMetricCaption {
-  width: 128px;
-  height: 6px;
-}
-
-/* ============================================================
-   PERÍODO
-   ============================================================ */
-
-.activitySkeletonPeriod {
-  min-height: 43px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  border-bottom:
-    1px solid rgba(97, 132, 128, 0.14);
-}
-
-.activitySkeletonPeriodText {
-  width: 194px;
-  height: 5px;
-}
-
-.activitySkeletonMethod {
-  width: 126px;
-  height: 5px;
-}
-
-/* ============================================================
-   CABEÇALHO DOS REGISTROS
-   ============================================================ */
-
-.activitySkeletonListHeader {
-  min-height: 91px;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  border-bottom:
-    1px solid rgba(97, 132, 128, 0.14);
-}
-
-.activitySkeletonListHeader > div {
-  display: flex;
-  flex-direction: column;
-
-  gap: 11px;
-}
-
-.activitySkeletonKicker {
-  width: 105px;
-  height: 6px;
-}
-
-.activitySkeletonHeading {
-  width: 178px;
-  height: 11px;
-}
-
-.activitySkeletonCount {
-  width: 48px;
-  height: 5px;
-}
-
-/* ============================================================
-   REGISTROS
-   ============================================================ */
-
-.activitySkeletonRecord {
-  min-height: 153px;
-
-  display: flex;
-
-  gap: 16px;
-
-  padding: 20px 0;
-
-  border-bottom:
-    1px solid rgba(97, 132, 128, 0.14);
-}
-
-.activitySkeletonRecordIcon {
-  width: 31px;
-  height: 31px;
-
-  flex: 0 0 31px;
-
-  border-radius: 9px;
-}
-
-.activitySkeletonRecordContent {
-  min-width: 0;
-  flex: 1;
-
-  display: flex;
-  flex-direction: column;
-
-  gap: 10px;
-}
-
-.activitySkeletonRecordMeta {
-  display: flex;
-  align-items: center;
-
-  gap: 12px;
-}
-
-.activitySkeletonRecordType {
+.activityLoadingRecordType {
   width: 58px;
   height: 6px;
 }
 
-.activitySkeletonRecordDate {
-  width: 104px;
+.activityLoadingRecordDate {
+  width: 110px;
   height: 6px;
 }
 
-.activitySkeletonRecordTitle {
-  width: 190px;
+.activityLoadingRecordTitle {
+  width: min(280px, 48%);
   height: 11px;
+
+  margin-bottom: 12px;
 }
 
-.activitySkeletonRecordDescriptionLong {
-  width: 92%;
-  height: 6px;
+.activityLoadingRecordTextLong {
+  width: min(690px, 96%);
+  height: 8px;
+
+  margin-top: 7px;
 }
 
-.activitySkeletonRecordDescription {
-  width: 74%;
-  height: 6px;
+.activityLoadingRecordText {
+  width: min(550px, 78%);
+  height: 8px;
+
+  margin-top: 7px;
 }
 
-.activitySkeletonRecordSource {
-  width: 91px;
-  height: 6px;
+.activityLoadingRecordSource {
+  width: 92px;
+  height: 7px;
 
-  margin-top: 5px;
+  margin-top: 15px;
 }
 
-/* ============================================================
-   RESPONSIVO
-   ============================================================ */
+
+/* mobile */
 
 @media (max-width: 720px) {
-  .activitySkeletonMetrics {
+  .activityLoadingMetrics {
     grid-template-columns: 1fr;
   }
 
-  .activitySkeletonMetric
-  + .activitySkeletonMetric {
-    padding-left: 0;
+  .activityLoadingMetric,
+  .activityLoadingMetric + .activityLoadingMetric {
+    min-height: 84px;
 
-    border-left: 0;
+    padding: 15px 0;
 
-    border-top:
-      1px solid rgba(97, 132, 128, 0.14);
+    border-right: 0;
+    border-bottom: 1px solid #142027;
   }
 
-  .activitySkeletonYears {
-    min-width: 185px;
+  .activityLoadingPeriod {
+    align-items: flex-start;
+    flex-direction: column;
+
+    padding: 13px 0;
   }
 
-  .activitySkeletonMethod {
-    display: none;
+  .activityLoadingRecordTitle {
+    width: 72%;
   }
 }
 
-/* ============================================================
-   REDUCED MOTION
-   ============================================================ */
-
 @media (prefers-reduced-motion: reduce) {
-  .activitySkeletonLine::after,
-  .activitySkeletonSmallIcon::after,
-  .activitySkeletonRecordIcon::after {
+  .activityLoadingLine::after,
+  .activityLoadingRecordIcon::after {
     animation: none;
   }
 }
 
-/* ===== END BRASIVO ACTIVITY STRUCTURAL SKELETON V2 ===== */
+/* ===== END BRASIVO ACTIVITY LOADING SKELETON FINAL ===== */

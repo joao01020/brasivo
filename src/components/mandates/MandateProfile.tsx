@@ -71,23 +71,80 @@ export default function MandateProfile({ id }: { id: string }) {
   }, [searchParams]);
 
   useEffect(() => {
+    const controller = new AbortController();
     let active = true;
-    Promise.all([
-      fetch(`/api/mandates/${id}`).then((r) => (r.ok ? r.json() : Promise.reject())),
-      fetch(`/api/mandates/${id}/followers`, { cache: "no-store" }).then((r) => (r.ok ? r.json() : { count: 0, available: false })),
-    ])
-      .then(([profile, followers]) => {
+
+    /*
+     * O skeleton geral existe somente enquanto os dados essenciais
+     * do mandato ainda não chegaram.
+     *
+     * Assim que /api/mandates/:id responde, liberamos imediatamente
+     * a estrutura real da página.
+     *
+     * Resumo, atividade, despesas, projetos e seguidores continuam
+     * carregando independentemente em seus próprios estados/skeletons.
+     */
+    setLoading(true);
+
+    fetch(`/api/mandates/${id}`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Falha ao carregar mandato.");
+        }
+
+        return response.json();
+      })
+      .then((profile) => {
         if (!active) return;
+
         setMandate(profile.mandate ?? null);
-        setFollowCount(followers.available === false ? null : Number(followers.count ?? 0));
+
+        /*
+         * A partir daqui o perfil básico já pode ser renderizado.
+         * Os painéis internos cuidarão dos seus próprios skeletons.
+         */
+        setLoading(false);
       })
-      .catch(() => {
-        if (active) setMandate(null);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+      .catch((reason) => {
+        if (!active || reason?.name === "AbortError") return;
+
+        setMandate(null);
+        setLoading(false);
       });
-    return () => { active = false; };
+
+    /*
+     * Seguidores não bloqueiam mais a renderização inicial.
+     */
+    fetch(`/api/mandates/${id}/followers`, {
+      signal: controller.signal,
+      cache: "no-store",
+    })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : { count: 0, available: false },
+      )
+      .then((followers) => {
+        if (!active) return;
+
+        setFollowCount(
+          followers?.available === false
+            ? null
+            : Number(followers?.count ?? 0),
+        );
+      })
+      .catch((reason) => {
+        if (!active || reason?.name === "AbortError") return;
+        setFollowCount(null);
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
   }, [id]);
 
   useEffect(() => {
@@ -110,15 +167,37 @@ export default function MandateProfile({ id }: { id: string }) {
   }, [id]);
 
   useEffect(() => {
+    const controller = new AbortController();
     let active = true;
+
     setExpensesLoading(true);
-    fetch(`/api/mandates/${id}/expenses?year=${expenseYear}`, { cache: "no-store" })
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((payload) => { if (active) setExpenses(payload); })
-      .catch(() => { if (active) setExpenses(null); })
-      .finally(() => { if (active) setExpensesLoading(false); });
-    return () => { active = false; };
-  }, [activeTab, expenseYear, id]);
+
+    fetch(
+      `/api/mandates/${id}/expenses?year=${expenseYear}`,
+      {
+        cache: "no-store",
+        signal: controller.signal,
+      },
+    )
+      .then((response) =>
+        response.ok ? response.json() : Promise.reject(),
+      )
+      .then((payload) => {
+        if (active) setExpenses(payload);
+      })
+      .catch((reason) => {
+        if (!active || reason?.name === "AbortError") return;
+        setExpenses(null);
+      })
+      .finally(() => {
+        if (active) setExpensesLoading(false);
+      });
+
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [expenseYear, id]);
 
   const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
   const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];

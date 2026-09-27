@@ -86,133 +86,6 @@ function activityIcon(activity: MandateActivity) {
 }
 
 
-function MandateActivityLoadingSkeleton() {
-  return (
-    <div
-      className={styles.activitySkeleton}
-      aria-busy="true"
-      aria-label="Carregando registros oficiais"
-    >
-      {/* =====================================================
-          ANO DO MANDATO
-          ===================================================== */}
-      <div className={styles.activitySkeletonYear}>
-        <div className={styles.activitySkeletonYearLabel}>
-          <span className={styles.activitySkeletonSmallIcon} />
-          <span
-            className={`${styles.activitySkeletonLine} ${styles.activitySkeletonYearText}`}
-          />
-        </div>
-
-        <div className={styles.activitySkeletonYears}>
-          <span />
-          <span />
-          <span />
-          <span className={styles.activitySkeletonYearActive} />
-        </div>
-      </div>
-
-      {/* =====================================================
-          MÉTRICAS
-          ===================================================== */}
-      <div className={styles.activitySkeletonMetrics}>
-        {[0, 1, 2].map((item) => (
-          <div
-            className={styles.activitySkeletonMetric}
-            key={item}
-          >
-            <span
-              className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMetricLabel}`}
-            />
-
-            <span
-              className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMetricValue}`}
-            />
-
-            <span
-              className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMetricCaption}`}
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* =====================================================
-          PERÍODO
-          ===================================================== */}
-      <div className={styles.activitySkeletonPeriod}>
-        <span
-          className={`${styles.activitySkeletonLine} ${styles.activitySkeletonPeriodText}`}
-        />
-
-        <span
-          className={`${styles.activitySkeletonLine} ${styles.activitySkeletonMethod}`}
-        />
-      </div>
-
-      {/* =====================================================
-          CABEÇALHO DA LISTA
-          ===================================================== */}
-      <div className={styles.activitySkeletonListHeader}>
-        <div>
-          <span
-            className={`${styles.activitySkeletonLine} ${styles.activitySkeletonKicker}`}
-          />
-
-          <span
-            className={`${styles.activitySkeletonLine} ${styles.activitySkeletonHeading}`}
-          />
-        </div>
-
-        <span
-          className={`${styles.activitySkeletonLine} ${styles.activitySkeletonCount}`}
-        />
-      </div>
-
-      {/* =====================================================
-          REGISTROS
-          ===================================================== */}
-      <div className={styles.activitySkeletonRecords}>
-        {[0, 1].map((item) => (
-          <div
-            className={styles.activitySkeletonRecord}
-            key={item}
-          >
-            <span className={styles.activitySkeletonRecordIcon} />
-
-            <div className={styles.activitySkeletonRecordContent}>
-              <div className={styles.activitySkeletonRecordMeta}>
-                <span
-                  className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordType}`}
-                />
-
-                <span
-                  className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordDate}`}
-                />
-              </div>
-
-              <span
-                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordTitle}`}
-              />
-
-              <span
-                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordDescriptionLong}`}
-              />
-
-              <span
-                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordDescription}`}
-              />
-
-              <span
-                className={`${styles.activitySkeletonLine} ${styles.activitySkeletonRecordSource}`}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function MandateActivityPanel({ mandateId, year }: Props) {
   const initialYear = year ?? new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(initialYear);
@@ -312,9 +185,103 @@ export default function MandateActivityPanel({ mandateId, year }: Props) {
         </div>
       </div>
 
+      
+
       {loading ? (
-          <MandateSectionSkeleton variant="activity" />
-        ) : error ? (
+        <div
+          className={styles.activityLoadingSkeleton}
+          aria-busy="true"
+          aria-label="Carregando atividade do mandato"
+        >
+          <div className={styles.activityLoadingMetrics}>
+            {[0, 1, 2].map((item) => (
+              <div
+                className={styles.activityLoadingMetric}
+                key={item}
+              >
+                <span
+                  className={`${styles.activityLoadingLine} ${styles.activityLoadingMetricLabel}`}
+                />
+
+                <span
+                  className={`${styles.activityLoadingLine} ${styles.activityLoadingMetricValue}`}
+                />
+
+                <span
+                  className={`${styles.activityLoadingLine} ${styles.activityLoadingMetricDescription}`}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.activityLoadingPeriod}>
+            <span
+              className={`${styles.activityLoadingLine} ${styles.activityLoadingPeriodLeft}`}
+            />
+
+            <span
+              className={`${styles.activityLoadingLine} ${styles.activityLoadingPeriodRight}`}
+            />
+          </div>
+
+          <div className={styles.activityLoadingHeading}>
+            <div>
+              <span
+                className={`${styles.activityLoadingLine} ${styles.activityLoadingKicker}`}
+              />
+
+              <span
+                className={`${styles.activityLoadingLine} ${styles.activityLoadingTitle}`}
+              />
+            </div>
+
+            <span
+              className={`${styles.activityLoadingLine} ${styles.activityLoadingCount}`}
+            />
+          </div>
+
+          <div className={styles.activityLoadingRecords}>
+            {[0, 1, 2].map((item) => (
+              <div
+                className={styles.activityLoadingRecord}
+                key={item}
+              >
+                <span
+                  className={styles.activityLoadingRecordIcon}
+                />
+
+                <div className={styles.activityLoadingRecordBody}>
+                  <div className={styles.activityLoadingRecordMeta}>
+                    <span
+                      className={`${styles.activityLoadingLine} ${styles.activityLoadingRecordType}`}
+                    />
+
+                    <span
+                      className={`${styles.activityLoadingLine} ${styles.activityLoadingRecordDate}`}
+                    />
+                  </div>
+
+                  <span
+                    className={`${styles.activityLoadingLine} ${styles.activityLoadingRecordTitle}`}
+                  />
+
+                  <span
+                    className={`${styles.activityLoadingLine} ${styles.activityLoadingRecordTextLong}`}
+                  />
+
+                  <span
+                    className={`${styles.activityLoadingLine} ${styles.activityLoadingRecordText}`}
+                  />
+
+                  <span
+                    className={`${styles.activityLoadingLine} ${styles.activityLoadingRecordSource}`}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : error ? (
         <div className={styles.errorState}>{error}</div>
       ) : (
         <>

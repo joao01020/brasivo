@@ -4119,26 +4119,3 @@ button.followed-expense-trend{font:inherit;text-align:left;color:inherit;backgro
 }
 
 /* ===== END BRASIVO STATE DIRECTORY SKELETON V2 ===== */
-
-
-/* BRASIVO ACTIVITY SKELETON NO DUPLICATE YEAR V2 */
-
-/*
- * O seletor real de ano permanece visível acima.
- * O skeleton representa somente os dados abaixo dele.
- */
-.mandate-section-skeleton-activity
-.mandate-skeleton-stat-grid {
-  border-top: 0;
-}
-
-/*
- * Evita um espaço excessivo entre o seletor real
- * e os cards de estatísticas em carregamento.
- */
-.mandate-section-skeleton-activity
-.mandate-skeleton-stat {
-  padding-top: 20px;
-}
-
-/* fim BRASIVO ACTIVITY SKELETON NO DUPLICATE YEAR V2 */

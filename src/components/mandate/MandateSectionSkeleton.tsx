@@ -1,17 +1,15 @@
 "use client";
 
+import styles from "./MandateSectionSkeleton.module.css";
+
 type Props = {
   variant: "activity" | "expenses" | "projects";
 };
 
-function Line({
-  className = "",
-}: {
-  className?: string;
-}) {
+function Line({ className = "" }: { className?: string }) {
   return (
     <span
-      className={`mandate-section-skeleton-line ${className}`.trim()}
+      className={`${styles.line} ${className}`.trim()}
       aria-hidden="true"
     />
   );
@@ -19,47 +17,43 @@ function Line({
 
 function ActivitySkeleton() {
   return (
-    <div className="mandate-section-skeleton mandate-section-skeleton-activity">
-      <div className="mandate-skeleton-stat-grid">
+    <div className={`${styles.root} ${styles.activity}`}>
+      <div className={styles.statGrid}>
         {Array.from({ length: 3 }, (_, index) => (
-          <div
-            className="mandate-skeleton-stat"
-            key={index}
-          >
-            <Line className="is-stat-label" />
-            <Line className="is-stat-value" />
-            <Line className="is-stat-description" />
+          <div className={styles.stat} key={index}>
+            <Line className={styles.statLabel} />
+            <Line className={styles.statValue} />
+            <Line className={styles.statDescription} />
           </div>
         ))}
       </div>
 
-      <div className="mandate-skeleton-section-heading">
-        <div>
-          <Line className="is-kicker" />
-          <Line className="is-heading" />
-        </div>
-
-        <Line className="is-count" />
+      <div className={styles.periodRow}>
+        <Line className={styles.periodText} />
+        <Line className={styles.periodMethod} />
       </div>
 
-      <div className="mandate-skeleton-records">
-        {Array.from({ length: 2 }, (_, index) => (
-          <div
-            className="mandate-skeleton-record"
-            key={index}
-          >
-            <span className="mandate-skeleton-record-icon" />
+      <div className={styles.sectionHeading}>
+        <div>
+          <Line className={styles.kicker} />
+          <Line className={styles.heading} />
+        </div>
+        <Line className={styles.count} />
+      </div>
 
-            <div className="mandate-skeleton-record-copy">
-              <div className="mandate-skeleton-record-meta">
-                <Line className="is-record-type" />
-                <Line className="is-record-date" />
+      <div className={styles.records}>
+        {Array.from({ length: 3 }, (_, index) => (
+          <div className={styles.record} key={index}>
+            <span className={styles.recordIcon} aria-hidden="true" />
+            <div className={styles.recordCopy}>
+              <div className={styles.recordMeta}>
+                <Line className={styles.recordType} />
+                <Line className={styles.recordDate} />
               </div>
-
-              <Line className="is-record-title" />
-              <Line className="is-record-text is-long" />
-              <Line className="is-record-text" />
-              <Line className="is-record-source" />
+              <Line className={styles.recordTitle} />
+              <Line className={`${styles.recordText} ${styles.long}`} />
+              <Line className={styles.recordText} />
+              <Line className={styles.recordSource} />
             </div>
           </div>
         ))}
@@ -70,68 +64,57 @@ function ActivitySkeleton() {
 
 function ExpensesSkeleton() {
   return (
-    <div className="mandate-section-skeleton mandate-section-skeleton-expenses">
-      <div className="mandate-skeleton-expense-context">
-        <span className="mandate-skeleton-circle" />
-
+    <div className={`${styles.root} ${styles.expenses}`}>
+      <div className={styles.expenseContext}>
+        <span className={styles.circle} aria-hidden="true" />
         <div>
-          <Line className="is-context-long" />
-          <Line className="is-context-short" />
+          <Line className={styles.contextLong} />
+          <Line className={styles.contextShort} />
         </div>
       </div>
 
-      <div className="mandate-skeleton-expense-cards">
+      <div className={styles.expenseCards}>
         {Array.from({ length: 3 }, (_, index) => (
-          <div
-            className="mandate-skeleton-expense-card"
-            key={index}
-          >
-            <Line className="is-expense-label" />
-
+          <div className={styles.expenseCard} key={index}>
+            <Line className={styles.expenseLabel} />
             {index === 2 ? (
               <>
-                <Line className="is-expense-return-title" />
-                <Line className="is-expense-return-text" />
+                <Line className={styles.expenseReturnTitle} />
+                <Line className={styles.expenseReturnText} />
               </>
             ) : (
               <>
-                <Line className="is-expense-value" />
-                <Line className="is-expense-year" />
+                <Line className={styles.expenseValue} />
+                <Line className={styles.expenseYear} />
               </>
             )}
           </div>
         ))}
       </div>
 
-      <div className="mandate-skeleton-expense-context is-secondary">
-        <span className="mandate-skeleton-circle" />
-
+      <div className={`${styles.expenseContext} ${styles.secondary}`}>
+        <span className={styles.circle} aria-hidden="true" />
         <div>
-          <Line className="is-context-long" />
+          <Line className={styles.contextLong} />
         </div>
       </div>
 
-      <div className="mandate-skeleton-category-section">
-        <div className="mandate-skeleton-category-heading">
-          <Line className="is-heading" />
-          <Line className="is-small" />
+      <div className={styles.categorySection}>
+        <div className={styles.categoryHeading}>
+          <Line className={styles.heading} />
+          <Line className={styles.small} />
         </div>
 
         {Array.from({ length: 4 }, (_, index) => (
-          <div
-            className="mandate-skeleton-category"
-            key={index}
-          >
+          <div className={styles.category} key={index}>
             <div>
-              <Line className="is-category-name" />
-              <Line className="is-category-money" />
+              <Line className={styles.categoryName} />
+              <Line className={styles.categoryMoney} />
             </div>
-
             <span
-              className="mandate-skeleton-category-bar"
-              style={{
-                width: `${88 - index * 13}%`,
-              }}
+              className={styles.categoryBar}
+              style={{ width: `${88 - index * 13}%` }}
+              aria-hidden="true"
             />
           </div>
         ))}
@@ -142,50 +125,40 @@ function ExpensesSkeleton() {
 
 function ProjectsSkeleton() {
   return (
-    <div className="mandate-section-skeleton mandate-section-skeleton-projects">
-      <div className="mandate-skeleton-project-summary">
-        {Array.from({ length: 3 }, (_, index) => (
-          <div
-            className="mandate-skeleton-project-stat"
-            key={index}
-          >
-            <Line className="is-project-label" />
-            <Line className="is-project-number" />
-            <Line className="is-project-caption" />
+    <div className={`${styles.root} ${styles.projects}`}>
+      <div className={styles.projectSummary}>
+        {Array.from({ length: 4 }, (_, index) => (
+          <div className={styles.projectStat} key={index}>
+            <Line className={styles.projectLabel} />
+            <Line className={styles.projectNumber} />
+            <Line className={styles.projectCaption} />
           </div>
         ))}
       </div>
 
-      <div className="mandate-skeleton-section-heading">
+      <div className={styles.sectionHeading}>
         <div>
-          <Line className="is-kicker" />
-          <Line className="is-heading" />
+          <Line className={styles.kicker} />
+          <Line className={styles.heading} />
         </div>
-
-        <Line className="is-count" />
+        <Line className={styles.count} />
       </div>
 
-      <div className="mandate-skeleton-project-list">
+      <div className={styles.projectList}>
         {Array.from({ length: 3 }, (_, index) => (
-          <div
-            className="mandate-skeleton-project"
-            key={index}
-          >
-            <span className="mandate-skeleton-project-icon" />
-
-            <div className="mandate-skeleton-project-copy">
-              <div className="mandate-skeleton-project-meta">
-                <Line className="is-project-type" />
-                <Line className="is-project-date" />
+          <div className={styles.project} key={index}>
+            <span className={styles.projectIcon} aria-hidden="true" />
+            <div className={styles.projectCopy}>
+              <div className={styles.projectMeta}>
+                <Line className={styles.projectType} />
+                <Line className={styles.projectDate} />
               </div>
-
-              <Line className="is-project-title" />
-              <Line className="is-project-description is-long" />
-              <Line className="is-project-description" />
-
-              <div className="mandate-skeleton-project-footer">
-                <Line className="is-project-status" />
-                <Line className="is-project-link" />
+              <Line className={styles.projectTitle} />
+              <Line className={`${styles.projectDescription} ${styles.long}`} />
+              <Line className={styles.projectDescription} />
+              <div className={styles.projectFooter}>
+                <Line className={styles.projectStatus} />
+                <Line className={styles.projectLink} />
               </div>
             </div>
           </div>
@@ -195,15 +168,10 @@ function ProjectsSkeleton() {
   );
 }
 
-export default function MandateSectionSkeleton({
-  variant,
-}: Props) {
+export default function MandateSectionSkeleton({ variant }: Props) {
   if (variant === "expenses") {
     return (
-      <div
-        aria-busy="true"
-        aria-label="Carregando despesas"
-      >
+      <div className={styles.frame} aria-busy="true" aria-label="Carregando despesas">
         <ExpensesSkeleton />
       </div>
     );
@@ -212,6 +180,7 @@ export default function MandateSectionSkeleton({
   if (variant === "projects") {
     return (
       <div
+        className={styles.frame}
         aria-busy="true"
         aria-label="Carregando projetos e resultados"
       >
@@ -222,6 +191,7 @@ export default function MandateSectionSkeleton({
 
   return (
     <div
+      className={styles.frame}
       aria-busy="true"
       aria-label="Carregando atividade do mandato"
     >
