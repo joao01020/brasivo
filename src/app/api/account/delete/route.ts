@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { enforceSensitiveAction } from "@/lib/auth/server-security";
 import { NextResponse } from "next/server";
 import { createClient as createAdminClient } from "@supabase/supabase-js";
@@ -6,6 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 const CONFIRMATION_TEXT = "EXCLUIR MINHA CONTA";
 
 export async function DELETE(request: Request) {
+  /* BRASIVO_API_RATE_LIMIT_V2:DELETE:account-delete */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "ACCOUNT_DELETE",
+    "account-delete",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   // brasivoMfaSensitiveGate: backend authority for opted-in MFA accounts.
   const brasivoMfaSensitiveGate = await enforceSensitiveAction();
   if (brasivoMfaSensitiveGate) return brasivoMfaSensitiveGate;

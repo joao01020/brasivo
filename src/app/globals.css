@@ -2869,3 +2869,39 @@ button.followed-expense-trend{font:inherit;text-align:left;color:inherit;backgro
   }
 }
 
+/* ============================================================
+   BRASIVO — HOME INSTITUTIONAL STATEMENT V1
+   ============================================================ */
+
+.minimal-about .minimal-about-statement {
+  width: min(760px, calc(100% - 32px));
+  margin: 24px auto 0;
+  color: #dce7e4;
+  font-size: clamp(16px, 1.55vw, 21px);
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: -0.25px;
+  text-align: center;
+}
+
+.minimal-about .minimal-about-description {
+  width: min(620px, calc(100% - 32px));
+  margin: 18px auto 0;
+  color: #718087;
+  font-size: 11px;
+  line-height: 1.7;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  .minimal-about .minimal-about-statement {
+    margin-top: 19px;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .minimal-about .minimal-about-description {
+    margin-top: 15px;
+  }
+}
+

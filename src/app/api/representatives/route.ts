@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { getRepresentatives } from "@/lib/api/chamber";
 import type { Representative } from "@/types/chamber";
@@ -5,6 +6,14 @@ import type { Representative } from "@/types/chamber";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:representatives */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "PUBLIC_LIGHT",
+    "representatives",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   try {
     const state = request.nextUrl.searchParams.get("state")?.toUpperCase();
     const query = request.nextUrl.searchParams

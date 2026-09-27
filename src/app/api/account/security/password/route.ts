@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
 
@@ -23,6 +24,14 @@ function env(name: string) {
 }
 
 export async function POST(request: NextRequest) {
+  /* BRASIVO_API_RATE_LIMIT_V2:POST:account-password */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "SECURITY",
+    "account-password",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   const originGate = enforceSameOrigin(request);
   if (originGate) return originGate;
 

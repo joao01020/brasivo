@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { NextRequest } from "next/server";
 
 import {
@@ -32,7 +33,15 @@ function normalizeCode(value: unknown) {
     : "";
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:account-mfa */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "SECURITY",
+    "account-mfa",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   try {
     const { context, response } =
       await requireAuthenticatedSecurityContext();
@@ -62,6 +71,14 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  /* BRASIVO_API_RATE_LIMIT_V2:POST:account-mfa */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "SECURITY",
+    "account-mfa",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   const originGate = enforceSameOrigin(request);
   if (originGate) return originGate;
 

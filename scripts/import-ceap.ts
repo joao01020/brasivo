@@ -11,15 +11,19 @@ if (!Number.isInteger(year) || year < 2000 || year > 2100) {
   throw new Error("Ano inválido.");
 }
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseSecretKey = process.env.SUPABASE_SECRET_KEY;
+const supabaseUrl =
+  process.env.SUPABASE_URL ??
+  process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseSecretKey =
+  process.env.SUPABASE_SECRET_KEY ??
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl) {
-  throw new Error("NEXT_PUBLIC_SUPABASE_URL não encontrada.");
+  throw new Error("SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL não encontrada.");
 }
 
 if (!supabaseSecretKey) {
-  throw new Error("SUPABASE_SECRET_KEY não encontrada.");
+  throw new Error("SUPABASE_SECRET_KEY/SUPABASE_SERVICE_ROLE_KEY não encontrada.");
 }
 
 const supabase = createClient(supabaseUrl, supabaseSecretKey, {

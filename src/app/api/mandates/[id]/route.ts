@@ -1,8 +1,17 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { getRepresentative, getRepresentativeActivities } from "@/lib/api/chamber";
 
 export const dynamic = "force-dynamic";
 export async function GET(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:mandate-profile */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    _request,
+    "PUBLIC_LIGHT",
+    "mandate-profile",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   try {
     const { id: rawId } = await context.params; const id = Number(rawId);
     if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Identificador inválido." }, { status: 400 });

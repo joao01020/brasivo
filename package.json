@@ -10,7 +10,9 @@
     "dev:vinext": "vinext dev --port 3001",
     "build:vinext": "vinext build",
     "start:vinext": "wrangler dev --config dist/server/wrangler.json",
-    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json",
+    "ceap:sync": "tsx scripts/sync-ceap-expenses.ts",
+    "ceap:check": "tsx scripts/check-ceap-years.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

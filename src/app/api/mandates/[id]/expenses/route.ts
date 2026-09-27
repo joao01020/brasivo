@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import {
   NextRequest,
   NextResponse,
@@ -19,6 +20,14 @@ export async function GET(
     }>;
   },
 ) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:mandate-expenses */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "PUBLIC_HEAVY",
+    "mandate-expenses",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   try {
     const {
       id: rawId,

@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import type {
   MandateSummaryStreamEvent,
 } from "@/types/mandate-summary-stream";
@@ -363,6 +364,14 @@ export async function GET(
     }>;
   },
 ) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:mandate-summary-stream */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    _request,
+    "AI",
+    "mandate-summary-stream",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   const {
     id,
   } =

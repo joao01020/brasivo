@@ -1,3 +1,4 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { NextRequest, NextResponse } from "next/server";
 import { getMandateProjectsSummary } from "@/lib/camara/projects";
 
@@ -8,6 +9,14 @@ export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:mandate-projects */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    _request,
+    "PUBLIC_HEAVY",
+    "mandate-projects",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   const { id } = await context.params;
   const deputyId = Number(id);
 

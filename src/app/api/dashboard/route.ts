@@ -1,10 +1,19 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
 import { NextResponse } from "next/server";
 import { getRecentVotes, getRepresentatives } from "@/lib/api/chamber";
 import type { DashboardData } from "@/types/chamber";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:dashboard */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "PUBLIC_HEAVY",
+    "dashboard",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
   try {
     const [representatives, recentVotes] = await Promise.all([
       getRepresentatives(),
