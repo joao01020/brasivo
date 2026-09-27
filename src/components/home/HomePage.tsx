@@ -8,6 +8,57 @@ import BrazilMap from "@/components/map/BrazilMap";
 import AccountHeaderActions from "@/components/account/AccountHeaderActions";
 import type { DashboardData, Representative } from "@/types/chamber";
 
+const HOME_REQUEST_CACHE_MS = 2_000;
+
+type HomeRequestCacheEntry = {
+  value: unknown;
+  timestamp: number;
+};
+
+const pendingHomeRequests = new Map<string, Promise<unknown>>();
+const homeRequestCache = new Map<string, HomeRequestCacheEntry>();
+
+async function requestHomeJson<T>(url: string): Promise<T> {
+  const now = Date.now();
+  const cached = homeRequestCache.get(url);
+
+  if (
+    cached &&
+    now - cached.timestamp < HOME_REQUEST_CACHE_MS
+  ) {
+    return cached.value as T;
+  }
+
+  const pending = pendingHomeRequests.get(url);
+
+  if (pending) {
+    return pending as Promise<T>;
+  }
+
+  const request = fetch(url)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.status}`);
+      }
+
+      const payload = (await response.json()) as T;
+
+      homeRequestCache.set(url, {
+        value: payload,
+        timestamp: Date.now(),
+      });
+
+      return payload;
+    })
+    .finally(() => {
+      pendingHomeRequests.delete(url);
+    });
+
+  pendingHomeRequests.set(url, request);
+
+  return request;
+}
+
 const STATE_NAMES: Record<string, string> = {
   AC: "Acre",
   AL: "Alagoas",
@@ -78,14 +129,25 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/dashboard")
-      .then((response) => {
-        if (!response.ok) throw new Error("Dashboard request failed");
-        return response.json();
+    let active = true;
+
+    void requestHomeJson<DashboardData>("/api/dashboard")
+      .then((payload) => {
+        if (!active) return;
+        setDashboard(payload);
       })
-      .then(setDashboard)
-      .catch(() => setDashboard(null))
-      .finally(() => setDashboardReady(true));
+      .catch(() => {
+        if (!active) return;
+        setDashboard(null);
+      })
+      .finally(() => {
+        if (!active) return;
+        setDashboardReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -124,13 +186,13 @@ export default function HomePage() {
       if (state) parameters.set("state", state);
       if (query) parameters.set("query", query);
 
-      const response = await fetch(
-        `/api/representatives?${parameters.toString()}`,
-      );
+      const url =
+        `/api/representatives?${parameters.toString()}`;
 
-      if (!response.ok) throw new Error("Representatives request failed");
+      const payload = await requestHomeJson<{
+        representatives?: Representative[];
+      }>(url);
 
-      const payload = await response.json();
       setRepresentatives(payload.representatives ?? []);
     } catch {
       setRepresentatives([]);
@@ -149,13 +211,21 @@ export default function HomePage() {
     const ids = representatives.map((item) => item.id).join(",");
     let active = true;
 
-    fetch(`/api/mandates/followers?ids=${encodeURIComponent(ids)}`)
-      .then((response) => (response.ok ? response.json() : { counts: {} }))
+    const url =
+      `/api/mandates/followers?ids=${encodeURIComponent(ids)}`;
+
+    void requestHomeJson<{
+      counts?: Record<string, number>;
+    }>(url)
       .then((payload) => {
-        if (active) setFollowCounts(payload.counts ?? {});
+        if (active) {
+          setFollowCounts(payload.counts ?? {});
+        }
       })
       .catch(() => {
-        if (active) setFollowCounts({});
+        if (active) {
+          setFollowCounts({});
+        }
       });
 
     return () => {

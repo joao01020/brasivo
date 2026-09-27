@@ -15,6 +15,28 @@ const chamberInFlight = new Map<string, Promise<unknown>>();
 let chamberQueue: Promise<void> = Promise.resolve();
 let chamberLastRequestAt = 0;
 
+/*
+ * Cache agregado.
+ *
+ * O fetch individual da Câmara já usa revalidate: 900, porém
+ * getRepresentatives() precisa percorrer várias páginas antes
+ * de montar a lista completa.
+ *
+ * Guardamos o resultado final para que dashboard, home e outras
+ * rotas possam reutilizar a mesma lista já montada.
+ */
+const CHAMBER_AGGREGATE_CACHE_MS = 15 * 60 * 1000;
+
+let representativesCache:
+  | {
+      value: ChamberRepresentative[];
+      timestamp: number;
+    }
+  | null = null;
+
+let representativesPending:
+  Promise<ChamberRepresentative[]> | null = null;
+
 function chamberSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -149,19 +171,66 @@ async function fetchChamberSingle<T>(
   return payload.dados;
 }
 export async function getRepresentatives(): Promise<ChamberRepresentative[]> {
-  const firstPage = await fetchChamber<ChamberRepresentative>("/deputados?ordem=ASC&ordenarPor=nome&itens=100&pagina=1");
-  const representatives = [...firstPage.dados];
-  let nextUrl = firstPage.links?.find((link) => link.rel === "next")?.href;
-  let pageGuard = 0;
-  while (nextUrl && pageGuard < 10) {
-    const parsedUrl = new URL(nextUrl);
-    const relativePath = `${parsedUrl.pathname.replace("/api/v2", "")}${parsedUrl.search}`;
-    const page = await fetchChamber<ChamberRepresentative>(relativePath);
-    representatives.push(...page.dados);
-    nextUrl = page.links?.find((link) => link.rel === "next")?.href;
-    pageGuard += 1;
+  const now = Date.now();
+
+  if (
+    representativesCache &&
+    now - representativesCache.timestamp < CHAMBER_AGGREGATE_CACHE_MS
+  ) {
+    return representativesCache.value;
   }
-  return representatives;
+
+  /*
+   * Se dashboard e /api/representatives pedirem a lista ao mesmo
+   * tempo, ambos aguardam a MESMA montagem completa.
+   */
+  if (representativesPending) {
+    return representativesPending;
+  }
+
+  representativesPending = (async () => {
+    const firstPage =
+      await fetchChamber<ChamberRepresentative>(
+        "/deputados?ordem=ASC&ordenarPor=nome&itens=100&pagina=1",
+      );
+
+    const representatives = [...firstPage.dados];
+
+    let nextUrl =
+      firstPage.links?.find((link) => link.rel === "next")?.href;
+
+    let pageGuard = 0;
+
+    while (nextUrl && pageGuard < 10) {
+      const parsedUrl = new URL(nextUrl);
+
+      const relativePath =
+        `${parsedUrl.pathname.replace("/api/v2", "")}${parsedUrl.search}`;
+
+      const page =
+        await fetchChamber<ChamberRepresentative>(relativePath);
+
+      representatives.push(...page.dados);
+
+      nextUrl =
+        page.links?.find((link) => link.rel === "next")?.href;
+
+      pageGuard += 1;
+    }
+
+    representativesCache = {
+      value: representatives,
+      timestamp: Date.now(),
+    };
+
+    return representatives;
+  })();
+
+  try {
+    return await representativesPending;
+  } finally {
+    representativesPending = null;
+  }
 }
 
 export async function getRepresentative(id: number): Promise<ChamberRepresentativeDetail> {
