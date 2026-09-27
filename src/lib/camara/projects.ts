@@ -4,6 +4,8 @@ import type {
   MandateProjectStatus,
 } from "@/types/mandate-projects";
 
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+
 const API = "https://dadosabertos.camara.leg.br/api/v2";
 const SOURCE_NAME = "Câmara dos Deputados — Dados Abertos";
 const SOURCE_URL = "https://dadosabertos.camara.leg.br/";
@@ -33,6 +35,7 @@ type PropositionListItem = {
   numero?: number;
   ano?: number;
   ementa?: string;
+  dataApresentacao?: string | null;
 };
 
 type PropositionDetail = PropositionListItem & {
@@ -53,6 +56,59 @@ const fetchOptions = {
   headers: { accept: "application/json" },
   next: { revalidate: 60 * 60 * 6 },
 } as const;
+
+const PROJECT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+type MandateProjectCacheRow = {
+  proposition_external_id: number | string;
+  proposition_type: string;
+  proposition_number: number | null;
+  proposition_year: number;
+  summary: string | null;
+  presented_at: string | null;
+  official_status: string | null;
+  simple_status: string | null;
+  status_kind: string | null;
+  source_url: string;
+  collected_at: string;
+  updated_at: string;
+};
+
+let projectCacheClient: SupabaseClient | null | undefined;
+
+function getProjectCacheClient(): SupabaseClient | null {
+  if (projectCacheClient !== undefined) {
+    return projectCacheClient;
+  }
+
+  const url = process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  const key =
+    process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    projectCacheClient = null;
+    return null;
+  }
+
+  projectCacheClient = createClient(url, key, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+
+  return projectCacheClient;
+}
+
+function isProjectCacheFresh(row: MandateProjectCacheRow): boolean {
+  const collectedAt = Date.parse(row.collected_at);
+
+  return (
+    Number.isFinite(collectedAt) &&
+    Date.now() - collectedAt < PROJECT_CACHE_TTL_MS
+  );
+}
 
 function buildUrl(
   path: string,
@@ -265,6 +321,191 @@ function projectUrl(item: PropositionListItem) {
   return item.uri ?? SOURCE_URL;
 }
 
+function projectDetailToItem(detail: PropositionDetail): MandateProjectItem {
+  const status =
+    detail.statusProposicao?.descricaoSituacao ??
+    detail.ultimoStatus?.descricaoSituacao ??
+    detail.statusProposicao?.descricaoTramitacao ??
+    detail.ultimoStatus?.descricaoTramitacao ??
+    null;
+  const simplified = simplifyStatus(status);
+  const year = Number(detail.ano);
+  const type = (detail.siglaTipo ?? "Projeto").toUpperCase();
+  const number = Number(detail.numero ?? 0);
+
+  return {
+    id: Number(detail.id),
+    type,
+    number,
+    year,
+    label: number && year ? `${type} ${number}/${year}` : type,
+    summary: (
+      detail.ementa ?? "Descrição não informada pela fonte oficial."
+    ).trim(),
+    presentedAt: validDate(detail.dataApresentacao),
+    officialStatus: status,
+    simpleStatus: simplified.label,
+    statusKind: simplified.kind,
+    sourceUrl: projectUrl(detail),
+  };
+}
+
+function isMandateProjectStatus(value: string | null): value is MandateProjectStatus {
+  return (
+    value === "became_rule" ||
+    value === "in_progress" ||
+    value === "archived" ||
+    value === "other"
+  );
+}
+
+function cachedProjectToItem(
+  candidate: PropositionListItem,
+  row: MandateProjectCacheRow,
+): MandateProjectItem {
+  const officialStatus = row.official_status ?? null;
+  const simplified = simplifyStatus(officialStatus);
+  const year = Number(candidate.ano ?? row.proposition_year);
+  const type = (
+    candidate.siglaTipo ??
+    row.proposition_type ??
+    "Projeto"
+  ).toUpperCase();
+  const number = Number(candidate.numero ?? row.proposition_number ?? 0);
+
+  return {
+    id: Number(candidate.id ?? row.proposition_external_id),
+    type,
+    number,
+    year,
+    label: number && year ? `${type} ${number}/${year}` : type,
+    summary: (
+      candidate.ementa ??
+      row.summary ??
+      "Descrição não informada pela fonte oficial."
+    ).trim(),
+    presentedAt: validDate(candidate.dataApresentacao ?? row.presented_at),
+    officialStatus,
+    simpleStatus: row.simple_status ?? simplified.label,
+    statusKind: isMandateProjectStatus(row.status_kind)
+      ? row.status_kind
+      : simplified.kind,
+    sourceUrl: row.source_url || projectUrl(candidate),
+  };
+}
+
+type MandateProjectCacheWrite = {
+  representative_source: "camara";
+  representative_external_id: string;
+  proposition_external_id: number;
+  proposition_type: string;
+  proposition_number: number | null;
+  proposition_year: number;
+  summary: string;
+  presented_at: string | null;
+  official_status: string | null;
+  simple_status: string;
+  status_kind: MandateProjectStatus;
+  source_url: string;
+  collected_at: string;
+  updated_at: string;
+};
+
+function projectItemToCacheRow(
+  deputyId: number,
+  item: MandateProjectItem,
+  collectedAt: string,
+): MandateProjectCacheWrite {
+  return {
+    representative_source: "camara",
+    representative_external_id: String(deputyId),
+    proposition_external_id: item.id,
+    proposition_type: item.type,
+    proposition_number: item.number || null,
+    proposition_year: item.year,
+    summary: item.summary,
+    presented_at: item.presentedAt,
+    official_status: item.officialStatus,
+    simple_status: item.simpleStatus,
+    status_kind: item.statusKind,
+    source_url: item.sourceUrl,
+    collected_at: collectedAt,
+    updated_at: collectedAt,
+  };
+}
+
+async function loadProjectCache(
+  deputyId: number,
+  propositionIds: number[],
+): Promise<Map<number, MandateProjectCacheRow>> {
+  const output = new Map<number, MandateProjectCacheRow>();
+
+  if (propositionIds.length === 0) return output;
+
+  const supabase = getProjectCacheClient();
+  if (!supabase) return output;
+
+  try {
+    const { data, error } = await supabase
+      .from("mandate_projects")
+      .select(
+        "proposition_external_id,proposition_type,proposition_number,proposition_year,summary,presented_at,official_status,simple_status,status_kind,source_url,collected_at,updated_at",
+      )
+      .eq("representative_source", "camara")
+      .eq("representative_external_id", String(deputyId))
+      .in("proposition_external_id", propositionIds);
+
+    if (error) {
+      console.warn(
+        "[BRASIVO projetos] cache indisponível para leitura:",
+        error.message,
+      );
+      return output;
+    }
+
+    for (const raw of data ?? []) {
+      const row = raw as MandateProjectCacheRow;
+      const id = Number(row.proposition_external_id);
+      if (Number.isInteger(id) && id > 0) output.set(id, row);
+    }
+  } catch (error) {
+    console.warn(
+      "[BRASIVO projetos] falha inesperada ao ler cache:",
+      error,
+    );
+  }
+
+  return output;
+}
+
+async function persistProjectCache(
+  rows: MandateProjectCacheWrite[],
+): Promise<void> {
+  if (rows.length === 0) return;
+
+  const supabase = getProjectCacheClient();
+  if (!supabase) return;
+
+  try {
+    const { error } = await supabase.from("mandate_projects").upsert(rows, {
+      onConflict:
+        "representative_source,representative_external_id,proposition_external_id",
+    });
+
+    if (error) {
+      console.warn(
+        "[BRASIVO projetos] cache indisponível para escrita:",
+        error.message,
+      );
+    }
+  } catch (error) {
+    console.warn(
+      "[BRASIVO projetos] falha inesperada ao gravar cache:",
+      error,
+    );
+  }
+}
+
 async function getMandateInfo(deputyId: number) {
   const now = new Date();
   const fallbackStart = now.getFullYear() - 3;
@@ -314,10 +555,10 @@ export async function getMandateProjectsSummary(
 ): Promise<MandateProjectsSummary> {
   const warnings: string[] = [];
   const mandate = await getMandateInfo(deputyId);
+
   // A API da Câmara aceita idDeputadoAutor + ano no endpoint /proposicoes.
   // Consultamos cada ano da legislatura separadamente para evitar combinações
-  // de parâmetros incompatíveis (como dataInicio/dataFim nesse endpoint) e
-  // para garantir que o seletor dos 4 anos use exatamente a mesma base anual.
+  // de parâmetros incompatíveis e manter a mesma base anual do seletor.
   let listed: PropositionListItem[] = [];
 
   try {
@@ -344,69 +585,83 @@ export async function getMandateProjectsSummary(
     warnings.push(
       `Consulta de projetos temporariamente indisponível: ${message}`,
     );
-
-    listed = [];
   }
 
   const unique = new Map<number, PropositionListItem>();
   for (const item of listed) {
-    if (!item.id || !PROJECT_TYPES.has((item.siglaTipo ?? "").toUpperCase()))
+    if (!item.id || !PROJECT_TYPES.has((item.siglaTipo ?? "").toUpperCase())) {
       continue;
+    }
     unique.set(item.id, item);
   }
 
   const candidates = [...unique.values()];
+  const candidateIds = candidates
+    .map((item) => Number(item.id))
+    .filter((id) => Number.isInteger(id) && id > 0);
 
-  // Detalhamos todos os projetos normativos encontrados nos quatro anos.
-  // Isso mantém o resumo do mandato completo, sem truncar silenciosamente
-  // projetos mais antigos da legislatura.
-  const detailed: PropositionDetail[] = await withConcurrency<
-    PropositionListItem,
-    PropositionDetail
-  >(candidates, 3, async (item): Promise<PropositionDetail> => {
-    try {
-      const payload = await getJson<PropositionDetail>(
-        `/proposicoes/${item.id}`,
-      );
+  // O cache é opcional. Se o Supabase estiver indisponível, este mapa volta
+  // vazio e o fluxo segue consultando a fonte oficial normalmente.
+  const cached = await loadProjectCache(deputyId, candidateIds);
+  const resolved = new Map<number, MandateProjectItem>();
+  const needsRefresh: PropositionListItem[] = [];
 
-      return payload.dados ?? item;
-    } catch {
-      warnings.push(
-        `Não foi possível obter os detalhes de ${item.siglaTipo ?? "projeto"} ${item.numero ?? ""}/${item.ano ?? ""}.`,
-      );
+  for (const candidate of candidates) {
+    const id = Number(candidate.id);
+    const cachedRow = cached.get(id);
 
-      return item;
+    if (cachedRow && isProjectCacheFresh(cachedRow)) {
+      resolved.set(id, cachedProjectToItem(candidate, cachedRow));
+    } else {
+      needsRefresh.push(candidate);
     }
-  });
+  }
 
-  const items: MandateProjectItem[] = detailed
-    .map((detail) => {
-      const status =
-        detail.statusProposicao?.descricaoSituacao ??
-        detail.ultimoStatus?.descricaoSituacao ??
-        detail.statusProposicao?.descricaoTramitacao ??
-        detail.ultimoStatus?.descricaoTramitacao ??
-        null;
-      const simplified = simplifyStatus(status);
-      const year = Number(detail.ano);
-      const type = (detail.siglaTipo ?? "Projeto").toUpperCase();
-      const number = Number(detail.numero ?? 0);
+  const refreshedAt = new Date().toISOString();
+  const cacheWrites: MandateProjectCacheWrite[] = [];
 
-      return {
-        id: Number(detail.id),
-        type,
-        number,
-        year,
-        label: number && year ? `${type} ${number}/${year}` : type,
-        summary: (
-          detail.ementa ?? "Descrição não informada pela fonte oficial."
-        ).trim(),
-        presentedAt: validDate(detail.dataApresentacao),
-        officialStatus: status,
-        simpleStatus: simplified.label,
-        statusKind: simplified.kind,
-        sourceUrl: projectUrl(detail),
-      } satisfies MandateProjectItem;
+  // Apenas misses ou registros expirados fazem a consulta individual cara.
+  // Em cache quente, este bloco não realiza chamadas /proposicoes/{id}.
+  await withConcurrency(
+    needsRefresh,
+    3,
+    async (candidate): Promise<void> => {
+      const id = Number(candidate.id);
+      const staleRow = cached.get(id);
+
+      try {
+        const payload = await getJson<PropositionDetail>(`/proposicoes/${id}`);
+        const detail: PropositionDetail = {
+          ...candidate,
+          ...(payload.dados ?? {}),
+        };
+        const item = projectDetailToItem(detail);
+
+        resolved.set(id, item);
+        cacheWrites.push(projectItemToCacheRow(deputyId, item, refreshedAt));
+      } catch {
+        // Cache expirado ainda é um fallback melhor do que perder o status
+        // por uma indisponibilidade temporária da Câmara.
+        if (staleRow) {
+          resolved.set(id, cachedProjectToItem(candidate, staleRow));
+          return;
+        }
+
+        warnings.push(
+          `Não foi possível obter os detalhes de ${candidate.siglaTipo ?? "projeto"} ${candidate.numero ?? ""}/${candidate.ano ?? ""}.`,
+        );
+        resolved.set(id, projectDetailToItem(candidate));
+      }
+    },
+  );
+
+  // Um único UPSERT para todos os detalhes atualizados nesta execução.
+  await persistProjectCache(cacheWrites);
+
+  const items: MandateProjectItem[] = candidates
+    .map((candidate) => {
+      const id = Number(candidate.id);
+      return resolved.get(id) ?? projectDetailToItem(candidate);
     })
     .filter(
       (item) =>
