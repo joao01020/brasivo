@@ -314,6 +314,31 @@ export default function DashboardShell(props: Props = {}) {
     props.followedMandates ?? [],
   );
 
+  const FOLLOWED_PAGE_SIZE = 4;
+  const [followedPage, setFollowedPage] = useState(0);
+
+  const followedPageCount = Math.max(
+    1,
+    Math.ceil(followedMandates.length / FOLLOWED_PAGE_SIZE),
+  );
+
+  const visibleFollowedMandates = followedMandates.slice(
+    followedPage * FOLLOWED_PAGE_SIZE,
+    followedPage * FOLLOWED_PAGE_SIZE + FOLLOWED_PAGE_SIZE,
+  );
+
+  useEffect(() => {
+    setFollowedPage((current) =>
+      Math.min(
+        current,
+        Math.max(
+          0,
+          Math.ceil(followedMandates.length / FOLLOWED_PAGE_SIZE) - 1,
+        ),
+      ),
+    );
+  }, [followedMandates.length]);
+
   const refreshNotificationState = useCallback(async () => {
     const client = createClient();
     const {
@@ -936,7 +961,7 @@ export default function DashboardShell(props: Props = {}) {
 
               {followedMandates.length ? (
                 <div className="followed-list">
-                  {followedMandates.map((item) => (
+                  {visibleFollowedMandates.map((item) => (
                     <div
                       className="followed-row"
                       key={item.id}
@@ -997,6 +1022,50 @@ export default function DashboardShell(props: Props = {}) {
                       <ArrowRight className="followed-row-arrow" size={15} />
                     </div>
                   ))}
+
+                  {followedMandates.length > FOLLOWED_PAGE_SIZE && (
+                    <div
+                      className="followed-pager"
+                      aria-label="Navegação dos mandatos observados"
+                    >
+                      <button
+                        type="button"
+                        className="followed-pager-button"
+                        aria-label="Mandatos anteriores"
+                        disabled={followedPage === 0}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setFollowedPage((current) =>
+                            Math.max(0, current - 1),
+                          );
+                        }}
+                      >
+                        &lt;
+                      </button>
+
+                      <span
+                        className="followed-pager-status"
+                        aria-label={`Página ${followedPage + 1} de ${followedPageCount}`}
+                      >
+                        {followedPage + 1} / {followedPageCount}
+                      </span>
+
+                      <button
+                        type="button"
+                        className="followed-pager-button"
+                        aria-label="Próximos mandatos"
+                        disabled={followedPage >= followedPageCount - 1}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setFollowedPage((current) =>
+                            Math.min(followedPageCount - 1, current + 1),
+                          );
+                        }}
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="dashboard-empty-state">
