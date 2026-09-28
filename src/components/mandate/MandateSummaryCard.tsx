@@ -1,117 +1,130 @@
 "use client";
 
-import {
-  ExternalLink,
-  Eye,
-  Info,
-} from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ExternalLink, Eye, Info } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import styles from "./MandateSummaryCard.module.css";
-import type {
-  MandateSummaryStreamEvent,
-} from "@/types/mandate-summary-stream";
+import type { MandateSummaryStreamEvent } from "@/types/mandate-summary-stream";
 
 type Props = {
-  mandateId:
-    | number
-    | string;
+  mandateId: number | string;
 };
 
 const SOURCE_LABELS = {
-  projects:
-    "Projetos",
-  activity:
-    "Atividades",
-  expenses:
-    "Despesas",
+  projects: "Projetos",
+  activity: "Atividades",
+  expenses: "Despesas",
 } as const;
 
 type SourceState = {
-  status:
-    | "idle"
-    | "loading"
-    | "ready"
-    | "partial"
-    | "unavailable";
+  status: "idle" | "loading" | "ready" | "partial" | "unavailable";
   message: string;
 };
 
-const INITIAL_SOURCES: Record<
-  keyof typeof SOURCE_LABELS,
-  SourceState
-> = {
+const INITIAL_SOURCES: Record<keyof typeof SOURCE_LABELS, SourceState> = {
   projects: {
-    status:
-      "idle",
-    message:
-      "",
+    status: "idle",
+    message: "",
   },
   activity: {
-    status:
-      "idle",
-    message:
-      "",
+    status: "idle",
+    message: "",
   },
   expenses: {
-    status:
-      "idle",
-    message:
-      "",
+    status: "idle",
+    message: "",
   },
 };
 
-function parseSseChunk(
-  buffer: string,
-) {
-  const events:
-    MandateSummaryStreamEvent[] = [];
+type HighlightRange = {
+  start: number;
+  end: number;
+};
 
-  const blocks =
-    buffer.split(
-      "\n\n",
+const SUMMARY_HIGHLIGHT_PATTERNS = [
+  /R\$\s*\d{1,3}(?:\.\d{3})*,\d{2}/gi,
+  /\b(?:PEC|PLP|PL|PDL|PRC)\s+\d+(?:\/\d{4})?(?:,\s+sobre\s+[^.;]{1,90})?/gi,
+  /\b\d{1,3}(?:[.,]\d+)?%/g,
+  /\b\d{2}\/\d{2}\/\d{4}\b/g,
+  /\b\d{1,3}(?:\.\d{3})*(?=\s+(?:projetos?|presenças?|sessões?|discursos?|documentos?|votações?|restituições?))/gi,
+  /\b20\d{2}\b/g,
+  /\bem andamento\b/gi,
+] as const;
+
+function renderSummaryWithHighlights(text: string) {
+  const candidates: HighlightRange[] = [];
+
+  for (const pattern of SUMMARY_HIGHLIGHT_PATTERNS) {
+    const expression = new RegExp(pattern.source, pattern.flags);
+
+    for (const match of text.matchAll(expression)) {
+      if (typeof match.index !== "number" || !match[0]) continue;
+
+      candidates.push({
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+  }
+
+  candidates.sort(
+    (a, b) => a.start - b.start || b.end - b.start - (a.end - a.start),
+  );
+
+  const ranges: HighlightRange[] = [];
+  let coveredUntil = -1;
+
+  for (const candidate of candidates) {
+    if (candidate.start < coveredUntil) continue;
+    ranges.push(candidate);
+    coveredUntil = candidate.end;
+  }
+
+  if (!ranges.length) return text;
+
+  const parts: Array<string | ReactNode> = [];
+  let cursor = 0;
+
+  ranges.forEach((range, index) => {
+    if (range.start > cursor) {
+      parts.push(text.slice(cursor, range.start));
+    }
+
+    parts.push(
+      <span
+        className={styles.factHighlight}
+        key={`fact-${range.start}-${index}`}
+      >
+        {text.slice(range.start, range.end)}
+      </span>,
     );
 
-  const remainder =
-    blocks.pop() ??
-    "";
+    cursor = range.end;
+  });
 
-  for (
-    const block
-    of blocks
-  ) {
-    const dataLine =
-      block
-        .split(
-          "\n",
-        )
-        .find(
-          (
-            line,
-          ) =>
-            line.startsWith(
-              "data:",
-            ),
-        );
+  if (cursor < text.length) {
+    parts.push(text.slice(cursor));
+  }
+
+  return parts;
+}
+
+function parseSseChunk(buffer: string) {
+  const events: MandateSummaryStreamEvent[] = [];
+
+  const blocks = buffer.split("\n\n");
+
+  const remainder = blocks.pop() ?? "";
+
+  for (const block of blocks) {
+    const dataLine = block.split("\n").find((line) => line.startsWith("data:"));
 
     if (!dataLine) {
       continue;
     }
 
     try {
-      events.push(
-        JSON.parse(
-          dataLine
-            .slice(
-              5,
-            )
-            .trim(),
-        ),
-      );
+      events.push(JSON.parse(dataLine.slice(5).trim()));
     } catch {
       // Ignore an invalid event without breaking the stream.
     }
@@ -123,607 +136,322 @@ function parseSseChunk(
   };
 }
 
-export default function MandateSummaryCard({
-  mandateId,
-}: Props) {
-  const [
-    summary,
-    setSummary,
-  ] =
-    useState(
-      "",
-    );
+export default function MandateSummaryCard({ mandateId }: Props) {
+  const [summary, setSummary] = useState("");
 
   /*
-   * One authoritative client-side text buffer.
+   * O texto visível tem uma única origem autoritativa.
    *
-   * Before V32, factualBase / aiText / enrichmentText were independent
-   * React states. Streaming callbacks could read stale closures and one
-   * phase could visually replace another.
-   *
-   * V32 keeps one mutable stream buffer and mirrors it to React state.
+   * O servidor valida a resposta completa antes de enviá-la como `done`.
+   * A animação de escrita acontece somente no cliente, sobre esse texto já
+   * aprovado, evitando cache antigo + tokens provisórios + texto final
+   * disputando o mesmo estado React.
    */
-  const streamBufferRef =
-    useRef(
-      "",
-    );
+  const finalSummaryRef = useRef("");
+  const revealTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const aiStartedRef =
-    useRef(
-      false,
-    );
+  const [status, setStatus] = useState("Buscando informações oficiais…");
 
+  const [sources, setSources] = useState(INITIAL_SOURCES);
 
+  const [loading, setLoading] = useState(true);
 
+  const [stale, setStale] = useState(false);
 
-  const [
-    status,
-    setStatus,
-  ] =
-    useState(
-      "Buscando informações oficiais…",
-    );
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
 
-  const [
-    sources,
-    setSources,
-  ] =
-    useState(
-      INITIAL_SOURCES,
-    );
+  const [error, setError] = useState<string | null>(null);
 
-  const [
-    loading,
-    setLoading,
-  ] =
-    useState(
-      true,
-    );
+  useEffect(() => {
+    const controller = new AbortController();
 
-  const [
-    stale,
-    setStale,
-  ] =
-    useState(
-      false,
-    );
+    let mounted = true;
 
-  const [
-    generatedAt,
-    setGeneratedAt,
-  ] =
-    useState<
-      string | null
-    >(
-      null,
-    );
+    finalSummaryRef.current = "";
 
-  const [
-    error,
-    setError,
-  ] =
-    useState<
-      string | null
-    >(
-      null,
-    );
+    if (revealTimerRef.current) {
+      clearInterval(revealTimerRef.current);
+      revealTimerRef.current = null;
+    }
 
-  useEffect(
-    () => {
-      const controller =
-        new AbortController();
+    setSummary("");
+    setStatus("Buscando informações oficiais…");
+    setSources(INITIAL_SOURCES);
+    setLoading(true);
+    setStale(false);
+    setGeneratedAt(null);
+    setError(null);
 
-      let mounted =
-        true;
+    function revealFinalSummary(text: string, generatedAtValue: string) {
+      const finalText = text.trim();
 
-      streamBufferRef.current =
-        "";
-      aiStartedRef.current =
-        false;
+      if (revealTimerRef.current) {
+        clearInterval(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
 
-      setSummary(
-        "",
-      );
-      setStatus(
-        "Buscando informações oficiais…",
-      );
-      setSources(
-        INITIAL_SOURCES,
-      );
-      setLoading(
-        true,
-      );
-      setStale(
-        false,
-      );
-      setGeneratedAt(
-        null,
-      );
-      setError(
-        null,
-      );
+      finalSummaryRef.current = finalText;
+      setSummary("");
+      setGeneratedAt(generatedAtValue);
+      setStale(false);
+      setError(null);
+      setLoading(true);
+      setStatus("Finalizando a visão geral…");
 
-      async function run() {
-        try {
-          const response =
-            await fetch(
-              `/api/mandates/${encodeURIComponent(String(mandateId))}/summary-stream`,
-              {
-                cache:
-                  "no-store",
-                signal:
-                  controller.signal,
-                headers: {
-                  accept:
-                    "text/event-stream",
-                },
-              },
-            );
+      if (!finalText) {
+        setLoading(false);
+        return;
+      }
 
-          if (
-            !response.ok ||
-            !response.body
-          ) {
-            throw new Error(
-              `HTTP ${response.status}`,
-            );
+      let cursor = 0;
+      const step = Math.max(2, Math.ceil(finalText.length / 180));
+
+      revealTimerRef.current = setInterval(() => {
+        if (!mounted) {
+          if (revealTimerRef.current) {
+            clearInterval(revealTimerRef.current);
+            revealTimerRef.current = null;
+          }
+          return;
+        }
+
+        cursor = Math.min(finalText.length, cursor + step);
+        setSummary(finalText.slice(0, cursor));
+
+        if (cursor >= finalText.length) {
+          if (revealTimerRef.current) {
+            clearInterval(revealTimerRef.current);
+            revealTimerRef.current = null;
           }
 
-          const reader =
-            response.body
-              .getReader();
+          setSummary(finalText);
+          setStatus("Resumo atualizado.");
+          setLoading(false);
+        }
+      }, 12);
+    }
 
-          const decoder =
-            new TextDecoder();
+    async function run() {
+      try {
+        const response = await fetch(
+          `/api/mandates/${encodeURIComponent(String(mandateId))}/summary-stream`,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+            headers: {
+              accept: "text/event-stream",
+            },
+          },
+        );
 
-          let buffer =
-            "";
+        if (!response.ok || !response.body) {
+          throw new Error(`HTTP ${response.status}`);
+        }
 
-          while (
-            mounted
-          ) {
-            const {
-              done,
-              value,
-            } =
-              await reader.read();
+        const reader = response.body.getReader();
 
-            if (done) {
+        const decoder = new TextDecoder();
+
+        let buffer = "";
+
+        while (mounted) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            break;
+          }
+
+          buffer += decoder.decode(value, {
+            stream: true,
+          });
+
+          const parsed = parseSseChunk(buffer);
+
+          buffer = parsed.remainder;
+
+          for (const event of parsed.events) {
+            if (!mounted) {
               break;
             }
 
-            buffer +=
-              decoder.decode(
-                value,
-                {
-                  stream:
-                    true,
+            if (event.type === "status") {
+              setStatus(event.message);
+            }
+
+            if (event.type === "source") {
+              setSources((current) => ({
+                ...current,
+                [event.source]: {
+                  status: event.status,
+                  message: event.message,
                 },
-              );
+              }));
+            }
 
-            const parsed =
-              parseSseChunk(
-                buffer,
-              );
-
-            buffer =
-              parsed.remainder;
-
-            for (
-              const event
-              of parsed.events
-            ) {
-              if (
-                !mounted
-              ) {
-                break;
+            if (event.type === "cache") {
+              if (revealTimerRef.current) {
+                clearInterval(revealTimerRef.current);
+                revealTimerRef.current = null;
               }
 
-              if (
-                event.type ===
-                "status"
-              ) {
-                setStatus(
-                  event.message,
-                );
-              }
+              finalSummaryRef.current = event.summary.trim();
+              setSummary(finalSummaryRef.current);
+              setStale(event.stale);
+              setGeneratedAt(event.generatedAt);
+              setError(null);
+              setLoading(false);
+            }
 
-              if (
-                event.type ===
-                "source"
-              ) {
-                setSources(
-                  (
-                    current,
-                  ) => ({
-                    ...current,
-                    [event.source]:
-                      {
-                        status:
-                          event.status,
-                        message:
-                          event.message,
-                      },
-                  }),
-                );
-              }
+            if (event.type === "ai_start") {
+              /*
+               * `ai_start` é apenas estado de progresso. Nenhum token
+               * provisório escreve no resumo visível.
+               */
+              finalSummaryRef.current = "";
+              setSummary("");
+              setStale(false);
+              setStatus("Escrevendo a visão geral com os dados confirmados…");
+              setLoading(true);
+            }
 
-              if (
-                event.type ===
-                "cache"
-              ) {
-                aiStartedRef.current =
-                  true;
-
-                streamBufferRef.current =
-                  event.summary;
-
-                setSummary(
-                  event.summary,
-                );
-                setStale(
-                  event.stale,
-                );
-                setGeneratedAt(
-                  event.generatedAt,
-                );
-
-                if (
-                  !event.stale
-                ) {
-                  setLoading(
-                    false,
-                  );
-                }
-              }
-
-              if (
-                event.type ===
-                "factual"
-              ) {
+            if (event.type === "done") {
+              if (event.cached) {
                 /*
-                 * V33: factual/provisional text is internal only.
-                 * It must never be rendered over or before AI output.
+                 * O evento `cache` já publicou a única versão visível.
+                 * `done` apenas encerra o ciclo e nunca reescreve o texto.
                  */
+                if (!finalSummaryRef.current.trim()) {
+                  finalSummaryRef.current = event.summary.trim();
+                  setSummary(finalSummaryRef.current);
+                  setGeneratedAt(event.generatedAt);
+                }
+
+                setLoading(false);
                 continue;
               }
 
-              if (
-                event.type ===
-                "ai_start"
-              ) {
-                /*
-                 * The AI stream is the only progressive text shown.
-                 * Clear any provisional compatibility text once, before
-                 * the first token, never again during this stream.
-                 */
-                aiStartedRef.current =
-                  true;
-                streamBufferRef.current =
-                  "";
+              /*
+               * Para uma nova geração, `done.summary` é a primeira e única
+               * versão autorizada a chegar à UI. A escrita progressiva abaixo
+               * é apenas uma animação local desse texto já validado.
+               */
+              revealFinalSummary(event.summary, event.generatedAt);
+            }
 
-                setSummary(
-                  "",
-                );
-
-                setStatus(
-                  "Escrevendo a visão geral com os dados confirmados…",
-                );
+            if (event.type === "error") {
+              if (revealTimerRef.current) {
+                clearInterval(revealTimerRef.current);
+                revealTimerRef.current = null;
               }
 
-              if (
-                event.type ===
-                "ai_delta"
-              ) {
-                streamBufferRef.current +=
-                  event.text;
-
-                setSummary(
-                  streamBufferRef.current,
-                );
-              }
-
-              if (
-                event.type ===
-                  "enrichment_start" ||
-                event.type ===
-                  "enrichment_delta"
-              ) {
-                /*
-                 * V33: only ai_delta is allowed to write the visible
-                 * generated summary.
-                 */
-                continue;
-              }
-
-              if (
-                event.type ===
-                "done"
-              ) {
-                /*
-                 * Final server text should normally be byte-for-byte the
-                 * streamed text. Only update React if fallback/cache guard
-                 * produced a genuinely different final value.
-                 */
-                if (
-                  streamBufferRef.current.trim() !==
-                  event.summary.trim()
-                ) {
-                  streamBufferRef.current =
-                    event.summary;
-
-                  setSummary(
-                    event.summary,
-                  );
-                }
-
-                setGeneratedAt(
-                  event.generatedAt,
-                );
-                setStale(
-                  false,
-                );
-                setStatus(
-                  "Resumo atualizado.",
-                );
-                setLoading(
-                  false,
-                );
-              }
-
-              if (
-                event.type ===
-                "error"
-              ) {
-                if (
-                  !streamBufferRef.current.trim()
-                ) {
-                  setError(
-                    event.message,
-                  );
-                }
-
-                setLoading(
-                  false,
-                );
-              }
+              finalSummaryRef.current = "";
+              setSummary("");
+              setError(event.message);
+              setLoading(false);
             }
           }
-        } catch (
-          reason
-        ) {
-          if (
-            !mounted ||
-            (
-              reason instanceof
-                DOMException &&
-              reason.name ===
-                "AbortError"
-            )
-          ) {
-            return;
-          }
-
-          setError(
-            "Não foi possível atualizar o resumo neste momento.",
-          );
-
-          setLoading(
-            false,
-          );
         }
+      } catch (reason) {
+        if (
+          !mounted ||
+          (reason instanceof DOMException && reason.name === "AbortError")
+        ) {
+          return;
+        }
+
+        setError("Não foi possível atualizar o resumo neste momento.");
+
+        setLoading(false);
       }
+    }
 
-      void run();
+    void run();
 
-      return () => {
-        mounted =
-          false;
-        controller.abort();
-      };
-    },
-    [
-      mandateId,
-    ],
-  );
+    return () => {
+      mounted = false;
+      controller.abort();
 
-  const hasSummary =
-    Boolean(
-      summary.trim(),
-    );
+      if (revealTimerRef.current) {
+        clearInterval(revealTimerRef.current);
+        revealTimerRef.current = null;
+      }
+    };
+  }, [mandateId]);
+
+  const hasSummary = Boolean(summary.trim());
 
   return (
-    <section
-      className={
-        styles.root
-      }
-      aria-label="Resumo do mandato"
-    >
-      <div
-        className={
-          styles.header
-        }
-      >
-        <div
-          className={
-            styles.headingGroup
-          }
-        >
-          <div
-            className={
-              styles.eyeBox
-            }
-            aria-hidden="true"
-          >
-            <Eye
-              size={
-                17
-              }
-              strokeWidth={
-                1.8
-              }
-            />
+    <section className={styles.root} aria-label="Resumo do mandato">
+      <div className={styles.header}>
+        <div className={styles.headingGroup}>
+          <div className={styles.eyeBox} aria-hidden="true">
+            <Eye size={17} strokeWidth={1.8} />
           </div>
 
           <div>
-            <span
-              className={
-                styles.kicker
-              }
-            >
-              RESUMO DO MANDATO
-            </span>
+            <span className={styles.kicker}>RESUMO DO MANDATO</span>
 
-            <h2>
-              Entenda antes de se aprofundar
-            </h2>
+            <h2>Entenda antes de se aprofundar</h2>
           </div>
         </div>
 
-        {hasSummary && (
-          <span
-            className={
-              styles.mode
-            }
-          >
-            Dados oficiais
-          </span>
-        )}
+        {hasSummary && <span className={styles.mode}>Dados oficiais</span>}
       </div>
 
-      {!hasSummary &&
-      loading ? (
-        <div
-          className={
-            styles.preparing
-          }
-          role="status"
-          aria-live="polite"
-        >
-          <strong
-            className={
-              styles.preparingShimmer
-            }
-            data-text={
-              status
-            }
-          >
-            {
-              status
-            }
+      {!hasSummary && loading ? (
+        <div className={styles.preparing} role="status" aria-live="polite">
+          <strong className={styles.preparingShimmer} data-text={status}>
+            {status}
           </strong>
 
-          <SourceProgress
-            sources={
-              sources
-            }
-          />
+          <SourceProgress sources={sources} />
         </div>
       ) : hasSummary ? (
         <>
-          <div
-            className={
-              styles.overviewWrap
-            }
-            aria-live="polite"
-          >
-            <p
-              className={
-                styles.overview
-              }
-            >
-              {
-                summary
-              }
+          <div className={styles.overviewWrap} aria-live="polite">
+            <p className={styles.overview}>
+              {renderSummaryWithHighlights(summary)}
               {loading && (
-                <span
-                  className={
-                    styles.typingCursor
-                  }
-                  aria-hidden="true"
-                />
+                <span className={styles.typingCursor} aria-hidden="true" />
               )}
             </p>
           </div>
 
           {loading && (
-            <div
-              className={
-                styles.liveStatus
-              }
-            >
-              <span
-                className={
-                  styles.livePulse
-                }
-              />
-              <span>
-                {
-                  status
-                }
-              </span>
+            <div className={styles.liveStatus}>
+              <span className={styles.livePulse} />
+              <span>{status}</span>
             </div>
           )}
 
           {stale && (
-            <div
-              className={
-                styles.staleNotice
-              }
-            >
+            <div className={styles.staleNotice}>
               Mostrando a última versão enquanto os registros são atualizados.
             </div>
           )}
 
-          {loading && (
-            <SourceProgress
-              sources={
-                sources
-              }
-              compact
-            />
-          )}
+          {loading && <SourceProgress sources={sources} compact />}
 
-          <div
-            className={
-              styles.methodology
-            }
-          >
-            <div
-              className={
-                styles.methodologyTitle
-              }
-            >
-              <Info
-                size={
-                  13
-                }
-              />
-              <strong>
-                Como este resumo é preparado
-              </strong>
+          <div className={styles.methodology}>
+            <div className={styles.methodologyTitle}>
+              <Info size={13} />
+              <strong>Como este resumo é preparado</strong>
             </div>
 
             <p>
-              O BRASIVO usa somente dados confirmados nas fontes oficiais. Campos ausentes, falhas e timeouts não são transformados em zero. A síntese organiza esses registros sem dar nota, classificar desempenho ou recomendar apoio ou voto.
+              O BRASIVO usa somente dados confirmados nas fontes oficiais.
+              Campos ausentes, falhas e timeouts não são transformados em zero.
+              A síntese organiza esses registros sem dar nota, classificar
+              desempenho ou recomendar apoio ou voto.
             </p>
 
-            <div
-              className={
-                styles.sourcesLinks
-              }
-            >
+            <div className={styles.sourcesLinks}>
               <a
                 href="https://dadosabertos.camara.leg.br/"
                 target="_blank"
                 rel="noreferrer"
               >
-                Dados Abertos da Câmara{" "}
-                <ExternalLink
-                  size={
-                    10
-                  }
-                />
+                Dados Abertos da Câmara <ExternalLink size={10} />
               </a>
 
               <a
@@ -731,64 +459,31 @@ export default function MandateSummaryCard({
                 target="_blank"
                 rel="noreferrer"
               >
-                CEAP{" "}
-                <ExternalLink
-                  size={
-                    10
-                  }
-                />
+                CEAP <ExternalLink size={10} />
               </a>
             </div>
           </div>
 
-          <footer
-            className={
-              styles.footer
-            }
-          >
+          <footer className={styles.footer}>
             <span>
-              {
-                loading
-                  ? "Atualizando…"
-                  : "Atualizado"
-              }
+              {loading ? "Atualizando resumo…" : "Última atualização"}
             </span>
 
             {generatedAt && (
               <span>
-                {new Intl.DateTimeFormat(
-                  "pt-BR",
-                  {
-                    day:
-                      "2-digit",
-                    month:
-                      "2-digit",
-                    year:
-                      "numeric",
-                    hour:
-                      "2-digit",
-                    minute:
-                      "2-digit",
-                  },
-                ).format(
-                  new Date(
-                    generatedAt,
-                  ),
-                )}
+                {new Intl.DateTimeFormat("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }).format(new Date(generatedAt))}
               </span>
             )}
           </footer>
         </>
       ) : error ? (
-        <div
-          className={
-            styles.error
-          }
-        >
-          {
-            error
-          }
-        </div>
+        <div className={styles.error}>{error}</div>
       ) : null}
     </section>
   );
@@ -798,76 +493,29 @@ function SourceProgress({
   sources,
   compact = false,
 }: {
-  sources: Record<
-    keyof typeof SOURCE_LABELS,
-    SourceState
-  >;
+  sources: Record<keyof typeof SOURCE_LABELS, SourceState>;
   compact?: boolean;
 }) {
-  const active =
-    (
-      Object.entries(
-        sources,
-      ) as Array<
-        [
-          keyof typeof SOURCE_LABELS,
-          SourceState,
-        ]
-      >
-    ).filter(
-      (
-        [
-          _key,
-          value,
-        ],
-      ) =>
-        value.status !==
-        "idle",
-    );
+  const active = (
+    Object.entries(sources) as Array<[keyof typeof SOURCE_LABELS, SourceState]>
+  ).filter(([_key, value]) => value.status !== "idle");
 
-  if (
-    active.length ===
-    0
-  ) {
+  if (active.length === 0) {
     return null;
   }
 
   return (
     <div
-      className={
-        compact
-          ? styles.sourceProgressCompact
-          : styles.sourceProgress
-      }
+      className={compact ? styles.sourceProgressCompact : styles.sourceProgress}
     >
-      {active.map(
-        (
-          [
-            key,
-            value,
-          ],
-        ) => (
-          <div
-            key={
-              key
-            }
-            className={
-              styles.sourceProgressItem
-            }
-          >
-            <span
-              className={`${styles.sourceDot} ${styles[`source_${value.status}`]}`}
-            />
-            <span>
-              {
-                SOURCE_LABELS[
-                  key
-                ]
-              }
-            </span>
-          </div>
-        ),
-      )}
+      {active.map(([key, value]) => (
+        <div key={key} className={styles.sourceProgressItem}>
+          <span
+            className={`${styles.sourceDot} ${styles[`source_${value.status}`]}`}
+          />
+          <span>{SOURCE_LABELS[key]}</span>
+        </div>
+      ))}
     </div>
   );
 }

@@ -9569,3 +9569,186 @@ button.followed-expense-trend {
 }
 
 /* ===== END SETTINGS LOADING SKELETON V2 ===== */
+
+/* ============================================================
+   DASHBOARD — PAGINAÇÃO DOS MANDATOS OBSERVADOS
+   Mantém somente 4 mandatos visíveis por vez.
+   ============================================================ */
+
+.followed-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 2px 2px;
+}
+
+.followed-pager-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #173038;
+  border-radius: 50%;
+  background: #071014;
+  color: #90a2a8;
+  font: inherit;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease,
+    opacity 150ms ease;
+}
+
+.followed-pager-button:hover:not(:disabled) {
+  border-color: rgba(44, 218, 128, 0.5);
+  background: rgba(21, 71, 49, 0.18);
+  color: #47df91;
+}
+
+.followed-pager-button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.followed-pager-status {
+  min-width: 30px;
+  color: #56676d;
+  font-size: 8px;
+  text-align: center;
+  letter-spacing: 0.4px;
+}
+
+/* ===== END DASHBOARD FOLLOWED PAGER ===== */
+
+/* ============================================================
+   DASHBOARD — PAGINAÇÃO DOS MANDATOS OBSERVADOS
+   Mantém somente 4 mandatos visíveis por vez.
+   ============================================================ */
+
+.followed-pager {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 2px 2px;
+}
+
+.followed-pager-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #173038;
+  border-radius: 50%;
+  background: #071014;
+  color: #90a2a8;
+  font: inherit;
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition:
+    border-color 150ms ease,
+    color 150ms ease,
+    background 150ms ease,
+    opacity 150ms ease;
+}
+
+.followed-pager-button:hover:not(:disabled) {
+  border-color: rgba(44, 218, 128, 0.5);
+  background: rgba(21, 71, 49, 0.18);
+  color: #47df91;
+}
+
+.followed-pager-button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.followed-pager-status {
+  min-width: 30px;
+  color: #56676d;
+  font-size: 8px;
+  text-align: center;
+  letter-spacing: 0.4px;
+}
+
+/* ===== END DASHBOARD FOLLOWED PAGER ===== */
+
+/* ============================================================
+   DASHBOARD — PAGINAÇÃO DOS MANDATOS OBSERVADOS
+   Exibe somente quatro mandatos por página e mantém
+   o card compacto quando o usuário observa muitos mandatos.
+   ============================================================ */
+
+.followed-pager {
+  min-height: 43px;
+  padding: 10px 2px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.followed-pager-button {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #173038;
+  border-radius: 50%;
+
+  background: #071014;
+  color: #82949a;
+
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    color 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease,
+    opacity 150ms ease,
+    transform 150ms ease;
+}
+
+.followed-pager-button:hover:not(:disabled) {
+  color: #48df91;
+  border-color: rgba(49, 218, 128, 0.42);
+  background: rgba(24, 75, 53, 0.16);
+  transform: translateY(-1px);
+}
+
+.followed-pager-button:focus-visible {
+  outline: 1px solid rgba(49, 218, 128, 0.55);
+  outline-offset: 2px;
+}
+
+.followed-pager-button:disabled {
+  opacity: 0.22;
+  cursor: default;
+  transform: none;
+}
+
+.followed-pager-status {
+  min-width: 31px;
+  color: #53646a;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.35px;
+  text-align: center;
+}
+
+/* ===== END DASHBOARD FOLLOWED PAGER ===== */

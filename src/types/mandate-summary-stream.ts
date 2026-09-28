@@ -16,24 +16,17 @@ export type MandateSummaryStreamEvent =
       generatedAt: string | null;
     }
   | {
-      type: "factual";
-      text: string;
-    }
-  | {
+      /*
+       * Sinaliza que a geração começou. Nenhum texto provisório é exposto
+       * nesse estágio; a resposta precisa passar pela validação factual.
+       */
       type: "ai_start";
     }
   | {
-      type: "ai_delta";
-      text: string;
-    }
-  | {
-      type: "enrichment_start";
-    }
-  | {
-      type: "enrichment_delta";
-      text: string;
-    }
-  | {
+      /*
+       * Única fonte autoritativa para uma nova geração concluída.
+       * `summary` já foi validado no servidor antes de chegar ao cliente.
+       */
       type: "done";
       summary: string;
       generatedAt: string;

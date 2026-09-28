@@ -30,15 +30,6 @@ function eventBytes(event: MandateSummaryStreamEvent) {
   return encoder.encode(`data: ${JSON.stringify(event)}\n\n`);
 }
 
-function cleanJoin(parts: Array<string | null | undefined>) {
-  return parts
-    .map((item) => item?.trim())
-    .filter(Boolean)
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function hasUnsupportedAbsenceClaim(text: string) {
   const normalized = text
     .normalize("NFD")
@@ -105,6 +96,10 @@ function aiSummaryPassesGuard(args: {
     args.digest as {
       projects?: {
         total?: number;
+        latestProject?: {
+          label?: string | null;
+          summary?: string | null;
+        };
       };
     }
   ).projects;
@@ -120,6 +115,41 @@ function aiSummaryPassesGuard(args: {
     !normalizedOutput.includes("projeto")
   ) {
     return false;
+  }
+
+  const latestProject = projects?.latestProject;
+
+  if (latestProject?.label) {
+    const normalizedLabel = latestProject.label
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+    if (!normalizedOutput.includes(normalizedLabel)) {
+      return false;
+    }
+
+    if (latestProject.summary) {
+      const projectSentence = text.split(/(?<=[.!?])\s+/).find((sentence) =>
+        sentence
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .includes(normalizedLabel),
+      );
+
+      /*
+       * Quando existe ementa oficial, o texto precisa oferecer um tema curto
+       * em vez de colar a ementa completa no resumo.
+       */
+      if (
+        !projectSentence ||
+        !/\bsobre\b/i.test(projectSentence) ||
+        projectSentence.length > 230
+      ) {
+        return false;
+      }
+    }
   }
 
   const confirmedAttendance =
@@ -270,25 +300,21 @@ export async function GET(
         }
 
         /*
-         * Stale-while-revalidate:
-         * mostra imediatamente um resumo recente já salvo,
-         * mas continua atualizando no mesmo stream.
+         * Uma versão expirada continua disponível apenas como fallback.
+         * Ela NÃO é enviada antes de uma nova geração, porque exibir o cache
+         * antigo e depois substituir pelo texto recém-gerado cria duas fontes
+         * visuais concorrentes para o mesmo resumo.
          */
-        if (
-          cacheCanServeStale(cached) &&
-          cached?.summary &&
-          cached.mode === "ai"
-        ) {
-          send({
-            type: "cache",
-            summary: cached.summary,
-            stale: true,
-            generatedAt: cached.generated_at,
-          });
+        const staleFallback =
+          cacheCanServeStale(cached) && cached?.summary && cached.mode === "ai"
+            ? cached
+            : null;
 
+        if (staleFallback) {
           send({
             type: "status",
-            message: "Atualizando os registros oficiais em segundo plano…",
+            message:
+              "Atualizando os registros oficiais para preparar uma nova versão…",
           });
         }
 
@@ -299,13 +325,21 @@ export async function GET(
            * Outro request já está gerando este mesmo mandato.
            * Não duplicamos chamadas à Câmara/Groq.
            */
-          if (cached?.summary && cached.mode === "ai") {
+          if (staleFallback?.summary) {
+            send({
+              type: "cache",
+              summary: staleFallback.summary,
+              stale: true,
+              generatedAt: staleFallback.generated_at,
+            });
+
             send({
               type: "done",
-              summary: cached.summary,
-              generatedAt: cached.generated_at ?? new Date().toISOString(),
+              summary: staleFallback.summary,
+              generatedAt:
+                staleFallback.generated_at ?? new Date().toISOString(),
               cached: true,
-              mode: cached.mode === "ai" ? "ai" : "factual",
+              mode: "ai",
             });
 
             close();
@@ -399,8 +433,6 @@ export async function GET(
 
         const factualBalanced = narrativeSafetyText(digest);
 
-        let aiText = "";
-
         send({
           type: "status",
           message: "Organizando os dados confirmados em uma visão geral…",
@@ -413,14 +445,12 @@ export async function GET(
         const aiResult = await streamBalancedSummary({
           digest,
           factualText: factualBalanced,
-          onDelta: (delta) => {
-            aiText += delta;
-
-            send({
-              type: "ai_delta",
-              text: delta,
-            });
-          },
+          /*
+           * A resposta é validada por inteiro antes de se tornar visível.
+           * O streaming do provedor continua sendo consumido no servidor,
+           * mas tokens provisórios não são enviados para a interface.
+           */
+          onDelta: () => {},
         });
 
         const aiAccepted =
@@ -433,18 +463,36 @@ export async function GET(
         if (!aiAccepted) {
           if (aiResult.ok) {
             console.warn(
-              "[BRASIVO summary guard] Resposta da IA rejeitada. V33 não exibe fallback factual no lugar da IA.",
+              "[BRASIVO summary guard] Resposta da IA rejeitada pela validação factual.",
               {
                 mandateId,
               },
             );
           }
 
-          send({
-            type: "error",
-            message:
-              "Não foi possível concluir a síntese agora. Tente novamente em alguns instantes.",
-          });
+          if (staleFallback?.summary) {
+            send({
+              type: "cache",
+              summary: staleFallback.summary,
+              stale: true,
+              generatedAt: staleFallback.generated_at,
+            });
+
+            send({
+              type: "done",
+              summary: staleFallback.summary,
+              generatedAt:
+                staleFallback.generated_at ?? new Date().toISOString(),
+              cached: true,
+              mode: "ai",
+            });
+          } else {
+            send({
+              type: "error",
+              message:
+                "Não foi possível concluir a síntese agora. Tente novamente em alguns instantes.",
+            });
+          }
 
           close();
           return;
@@ -473,10 +521,33 @@ export async function GET(
       } catch (error) {
         console.error("[BRASIVO progressive summary]", error);
 
-        send({
-          type: "error",
-          message: "Não foi possível concluir o resumo agora.",
-        });
+        const fallback = await readSummaryCache(mandateId);
+
+        if (
+          cacheCanServeStale(fallback) &&
+          fallback?.summary &&
+          fallback.mode === "ai"
+        ) {
+          send({
+            type: "cache",
+            summary: fallback.summary,
+            stale: true,
+            generatedAt: fallback.generated_at,
+          });
+
+          send({
+            type: "done",
+            summary: fallback.summary,
+            generatedAt: fallback.generated_at ?? new Date().toISOString(),
+            cached: true,
+            mode: "ai",
+          });
+        } else {
+          send({
+            type: "error",
+            message: "Não foi possível concluir o resumo agora.",
+          });
+        }
 
         close();
       } finally {
