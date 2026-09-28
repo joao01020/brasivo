@@ -16,6 +16,7 @@ type Follower = {
   representative_external_id: string;
   representative_name: string | null;
   representative_source: string;
+  created_at: string;
 };
 
 type FollowedMandateRow = {
@@ -106,7 +107,7 @@ async function followersFor(
   const { data, error } = await supabase
     .from("representative_follows")
     .select(
-      "user_id,representative_external_id,representative_name,representative_source",
+      "user_id,representative_external_id,representative_name,representative_source,created_at",
     )
     .eq("representative_external_id", mandateId)
     .eq("representative_source", "camara");
@@ -226,7 +227,31 @@ async function createFollowerNotifications(
   updated: boolean,
 ) {
   if (!followers.length) return 0;
-  const rows = followers.map((follow) => ({
+
+  /*
+   * Uma notificação nova só é criada para quem já acompanhava o mandato
+   * quando o fato ocorreu. Isso impede que uma conta/novo acompanhamento
+   * receba histórico anterior como se fosse uma atualização recente.
+   *
+   * Atualizações de um registro já conhecido continuam sendo entregues:
+   * mesmo que o fato original seja antigo, a mudança foi detectada agora.
+   */
+  const eligibleFollowers = followers.filter((follow) => {
+    if (updated || !record.occurredAt) return true;
+
+    const followedAt = new Date(follow.created_at).getTime();
+    const occurredAt = new Date(record.occurredAt).getTime();
+
+    if (!Number.isFinite(followedAt) || !Number.isFinite(occurredAt)) {
+      return true;
+    }
+
+    return occurredAt >= followedAt;
+  });
+
+  if (!eligibleFollowers.length) return 0;
+
+  const rows = eligibleFollowers.map((follow) => ({
     user_id: follow.user_id,
     event_id: eventId,
     representative_external_id: mandateId,
