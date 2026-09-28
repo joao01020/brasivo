@@ -9158,3 +9158,414 @@ button.followed-expense-trend {
   font-weight: 400;
   letter-spacing: 0;
 }
+
+/* ============================================================
+   BRASIVO — DASHBOARD HEADER CIRCULAR ACTIONS
+   Alinha o sino do dashboard ao mesmo padrão circular do home
+   e mantém o skeleton com a mesma geometria durante o loading.
+   ============================================================ */
+
+.dashboard-header .dashboard-icon-button {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/*
+ * Skeleton do botão de notificação:
+ * mesma largura, altura e formato circular do botão real
+ * para evitar mudança visual durante o carregamento.
+ */
+.dashboard-loading-header .dashboard-skeleton-header-button {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+}
+
+/*
+ * Mantém o avatar também com proporção circular consistente
+ * ao lado do botão durante o loading.
+ */
+.dashboard-loading-header .dashboard-skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+}
+
+/* ===== END BRASIVO DASHBOARD CIRCULAR ACTIONS ===== */
+
+/* ============================================================
+   BRASIVO — SETTINGS LOADING SKELETON V2
+   Skeleton isolado da página real para preservar exatamente
+   a geometria final sem herdar grids ou estilos conflitantes.
+   ============================================================ */
+
+.settings-loading-v2-page {
+  min-height: 100vh;
+  background: #03090c;
+  color: #edf4f2;
+}
+
+.settings-loading-v2-topbar {
+  height: 72px;
+  border-bottom: 1px solid #111d22;
+}
+
+.settings-loading-v2-topbar-inner {
+  width: min(1120px, calc(100% - 40px));
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-loading-v2-brand {
+  width: 106px;
+  height: 20px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-loading-v2-back {
+  width: 118px;
+  height: 11px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-circle {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 50%;
+}
+
+.settings-loading-v2-account {
+  width: 94px;
+  height: 40px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-container {
+  width: min(1040px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 72px 0 56px;
+}
+
+.settings-loading-v2-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.settings-loading-v2-kicker {
+  color: #45dc89;
+  font-size: 7px;
+  letter-spacing: 2.2px;
+}
+
+.settings-loading-v2-title {
+  width: 305px;
+  height: 48px;
+  margin-top: 17px;
+  border-radius: 16px;
+}
+
+.settings-loading-v2-subtitle {
+  width: 360px;
+  max-width: 80%;
+  height: 10px;
+  margin-top: 14px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-grid {
+  margin-top: 38px;
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.settings-loading-v2-sidebar {
+  min-width: 0;
+}
+
+.settings-loading-v2-nav {
+  padding: 8px;
+  border: 1px solid #16252b;
+  border-radius: 15px;
+  background: rgba(6, 14, 17, 0.92);
+}
+
+.settings-loading-v2-nav-row {
+  min-height: 43px;
+  padding: 0 10px;
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr) 8px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 10px;
+}
+
+.settings-loading-v2-nav-row.is-active {
+  background: rgba(14, 45, 34, 0.38);
+}
+
+.settings-loading-v2-nav-icon {
+  width: 15px;
+  height: 15px;
+  border-radius: 5px;
+}
+
+.settings-loading-v2-nav-text {
+  width: 56px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-nav-text-short {
+  width: 68px;
+}
+
+.settings-loading-v2-nav-text-small {
+  width: 44px;
+}
+
+.settings-loading-v2-nav-text-privacy {
+  width: 108px;
+}
+
+.settings-loading-v2-nav-chevron {
+  width: 6px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-nav-divider {
+  height: 1px;
+  margin: 10px 2px 15px;
+  background: #142027;
+}
+
+.settings-loading-v2-legal {
+  display: block;
+  width: 34px;
+  height: 7px;
+  margin: 0 0 10px 4px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-privacy {
+  min-height: 44px;
+  border: 1px solid rgba(34, 210, 120, 0.12);
+}
+
+.settings-loading-v2-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-loading-v2-card {
+  min-width: 0;
+  padding: 23px;
+  border: 1px solid #16252b;
+  border-radius: 15px;
+  background: rgba(6, 14, 17, 0.92);
+}
+
+.settings-loading-v2-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-loading-v2-card-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 11px;
+}
+
+.settings-loading-v2-card-heading-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.settings-loading-v2-card-kicker {
+  width: 38px;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-card-title {
+  width: 166px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-secondary-title {
+  width: 125px;
+  height: 14px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-divider {
+  height: 1px;
+  margin: 18px 0;
+  background: #142027;
+}
+
+.settings-loading-v2-profile {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+
+.settings-loading-v2-avatar {
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  border-radius: 50%;
+}
+
+.settings-loading-v2-profile-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.settings-loading-v2-profile-title {
+  width: 112px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-profile-description {
+  width: 270px;
+  max-width: 100%;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-profile-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.settings-loading-v2-button {
+  width: 98px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.settings-loading-v2-button-secondary {
+  width: 76px;
+}
+
+.settings-loading-v2-form {
+  display: flex;
+  flex-direction: column;
+  gap: 21px;
+}
+
+.settings-loading-v2-field {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.settings-loading-v2-label {
+  width: 88px;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-label-email {
+  width: 38px;
+}
+
+.settings-loading-v2-input {
+  width: 100%;
+  height: 43px;
+  border-radius: 12px;
+}
+
+.settings-loading-v2-helper {
+  width: 235px;
+  max-width: 55%;
+  height: 6px;
+  border-radius: 999px;
+}
+
+.settings-loading-v2-save {
+  width: 130px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.settings-loading-v2-secondary-card {
+  min-height: 120px;
+}
+
+@media (max-width: 760px) {
+  .settings-loading-v2-topbar-inner,
+  .settings-loading-v2-container {
+    width: min(100% - 28px, 1040px);
+  }
+
+  .settings-loading-v2-back {
+    display: none;
+  }
+
+  .settings-loading-v2-account {
+    width: 40px;
+    border-radius: 50%;
+  }
+
+  .settings-loading-v2-container {
+    padding-top: 46px;
+  }
+
+  .settings-loading-v2-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-loading-v2-sidebar {
+    display: none;
+  }
+
+  .settings-loading-v2-title {
+    width: min(280px, 80vw);
+    height: 42px;
+  }
+
+  .settings-loading-v2-subtitle {
+    width: min(330px, 84vw);
+  }
+}
+
+/* ===== END SETTINGS LOADING SKELETON V2 ===== */

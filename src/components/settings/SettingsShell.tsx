@@ -23,13 +23,17 @@ import MfaSettings from "@/components/settings/MfaSettings";
 import SettingsPrivacyCard from "@/components/settings/SettingsPrivacyCard";
 import "./SettingsPrivacyShortcut.css";
 import ProfileAvatarEditor from "@/components/account/ProfileAvatarEditor";
+import SettingsLoadingSkeleton from "@/components/settings/SettingsLoadingSkeleton";
 
 type SettingsShellProps = {
   initialDisplayName?: string;
   email?: string;
 };
 
-export default function SettingsShell({ initialDisplayName = "", email: initialEmail = "" }: SettingsShellProps = {}) {
+export default function SettingsShell({
+  initialDisplayName = "",
+  email: initialEmail = "",
+}: SettingsShellProps = {}) {
   const router = useRouter();
   const [sessionLoading, setSessionLoading] = useState(!initialEmail);
   const [email, setEmail] = useState(initialEmail);
@@ -37,7 +41,9 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [messageType, setMessageType] = useState<"success" | "error">("success");
+  const [messageType, setMessageType] = useState<"success" | "error">(
+    "success",
+  );
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -58,7 +64,9 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
     let active = true;
     const client = createClient();
     (async () => {
-      const { data: { session } } = await client.auth.getSession();
+      const {
+        data: { session },
+      } = await client.auth.getSession();
       const user = session?.user;
       if (!active) return;
       if (!user) {
@@ -72,12 +80,22 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
         .maybeSingle();
       if (!active) return;
       const userEmail = user.email ?? "";
-      const metadataName = typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "";
+      const metadataName =
+        typeof user.user_metadata?.name === "string"
+          ? user.user_metadata.name
+          : "";
       setEmail(userEmail);
-      setDisplayName(profile?.display_name || metadataName || userEmail.split("@")[0] || "Usuário");
+      setDisplayName(
+        profile?.display_name ||
+          metadataName ||
+          userEmail.split("@")[0] ||
+          "Usuário",
+      );
       setSessionLoading(false);
     })();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [initialEmail, router]);
 
   function showMessage(text: string, type: "success" | "error" = "success") {
@@ -121,7 +139,7 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
     setSavingProfile(false);
   }
 
-        async function changePassword(event: FormEvent) {
+  async function changePassword(event: FormEvent) {
     event.preventDefault();
     setMessage(null);
     setPasswordSaved(false);
@@ -190,11 +208,14 @@ export default function SettingsShell({ initialDisplayName = "", email: initialE
     }
   }
 
-async function deleteAccount() {
+  async function deleteAccount() {
     setMessage(null);
 
     if (deleteConfirmation !== confirmationText) {
-      showMessage(`Digite exatamente “${confirmationText}” para continuar.`, "error");
+      showMessage(
+        `Digite exatamente “${confirmationText}” para continuar.`,
+        "error",
+      );
       return;
     }
 
@@ -216,7 +237,10 @@ async function deleteAccount() {
       const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        showMessage(result.error || "Não foi possível excluir a conta.", "error");
+        showMessage(
+          result.error || "Não foi possível excluir a conta.",
+          "error",
+        );
         setDeletingAccount(false);
         return;
       }
@@ -226,13 +250,16 @@ async function deleteAccount() {
       router.replace("/login?accountDeleted=1");
       router.refresh();
     } catch {
-      showMessage("Não foi possível excluir a conta. Verifique sua conexão e tente novamente.", "error");
+      showMessage(
+        "Não foi possível excluir a conta. Verifique sua conexão e tente novamente.",
+        "error",
+      );
       setDeletingAccount(false);
     }
   }
 
   if (sessionLoading) {
-    return <main className="settings-page"><section className="settings-content"><div className="settings-heading"><span>MINHA CONTA</span><h1>Carregando configurações…</h1></div></section></main>;
+    return <SettingsLoadingSkeleton />;
   }
 
   return (
@@ -240,11 +267,16 @@ async function deleteAccount() {
       <header className="settings-topbar">
         <div className="settings-topbar-inner">
           <Link className="brand dashboard-brand" href="/">
-            <span>BR</span><b>A</b><span>SIVO</span>
+            <span>BR</span>
+            <b>A</b>
+            <span>SIVO</span>
           </Link>
-          <div className="page-header-right"><Link className="settings-back" href="/dashboard">
-            <ArrowLeft size={15} /> Voltar ao dashboard
-          </Link><AccountHeaderActions /></div>
+          <div className="page-header-right">
+            <Link className="settings-back" href="/dashboard">
+              <ArrowLeft size={15} /> Voltar ao dashboard
+            </Link>
+            <AccountHeaderActions />
+          </div>
         </div>
       </header>
 
@@ -256,24 +288,29 @@ async function deleteAccount() {
         </div>
 
         {message && (
-          <div className={`settings-message ${messageType === "error" ? "is-error" : ""}`}>
+          <div
+            className={`settings-message ${messageType === "error" ? "is-error" : ""}`}
+          >
             {message}
           </div>
         )}
 
         <div className="settings-grid">
           <aside className="settings-nav-card">
-            <a href="#perfil" className="is-active"><UserRound size={16} /> Perfil <ChevronRight size={14} /></a>
-            <a href="#seguranca"><LockKeyhole size={16} /> Segurança <ChevronRight size={14} /></a>
-            <a href="#zona-de-perigo"><AlertTriangle size={16} /> Conta <ChevronRight size={14} /></a>
+            <a href="#perfil" className="is-active">
+              <UserRound size={16} /> Perfil <ChevronRight size={14} />
+            </a>
+            <a href="#seguranca">
+              <LockKeyhole size={16} /> Segurança <ChevronRight size={14} />
+            </a>
+            <a href="#zona-de-perigo">
+              <AlertTriangle size={16} /> Conta <ChevronRight size={14} />
+            </a>
 
             <div className="settings-nav-legal">
               <span className="settings-nav-legal-label">LEGAL</span>
 
-              <Link
-                href="/privacy"
-                className="settings-nav-privacy-button"
-              >
+              <Link href="/privacy" className="settings-nav-privacy-button">
                 <ShieldCheck size={16} />
                 Política de Privacidade
                 <ChevronRight size={14} />
@@ -284,31 +321,58 @@ async function deleteAccount() {
           <div className="settings-panels">
             <section className="settings-card" id="perfil">
               <div className="settings-card-heading">
-                <div className="settings-card-icon"><UserRound size={18} /></div>
-                <div><small>PERFIL</small><h2>Informações da conta</h2></div>
+                <div className="settings-card-icon">
+                  <UserRound size={18} />
+                </div>
+                <div>
+                  <small>PERFIL</small>
+                  <h2>Informações da conta</h2>
+                </div>
               </div>
               <ProfileAvatarEditor />
               <form onSubmit={saveProfile} className="settings-form">
                 <label>
                   <span>Nome de exibição</span>
-                  <input value={displayName} onChange={(e) => { setDisplayName(e.target.value); setProfileSaved(false); }} maxLength={80} />
+                  <input
+                    value={displayName}
+                    onChange={(e) => {
+                      setDisplayName(e.target.value);
+                      setProfileSaved(false);
+                    }}
+                    maxLength={80}
+                  />
                 </label>
                 <label>
                   <span>E-mail</span>
                   <input value={email} disabled />
-                  <small>Este é o e-mail utilizado para acessar sua conta.</small>
+                  <small>
+                    Este é o e-mail utilizado para acessar sua conta.
+                  </small>
                 </label>
-                <button className="settings-save" type="submit" disabled={savingProfile}>
+                <button
+                  className="settings-save"
+                  type="submit"
+                  disabled={savingProfile}
+                >
                   {profileSaved ? <Check size={15} /> : <Save size={15} />}
-                  {savingProfile ? "Salvando..." : profileSaved ? "Salvo" : "Salvar alterações"}
+                  {savingProfile
+                    ? "Salvando..."
+                    : profileSaved
+                      ? "Salvo"
+                      : "Salvar alterações"}
                 </button>
               </form>
             </section>
 
             <section className="settings-card" id="seguranca">
               <div className="settings-card-heading">
-                <div className="settings-card-icon"><LockKeyhole size={18} /></div>
-                <div><small>SEGURANÇA</small><h2>Alterar senha</h2></div>
+                <div className="settings-card-icon">
+                  <LockKeyhole size={18} />
+                </div>
+                <div>
+                  <small>SEGURANÇA</small>
+                  <h2>Alterar senha</h2>
+                </div>
               </div>
 
               <div className="settings-security-copy">
@@ -318,7 +382,10 @@ async function deleteAccount() {
 
               <MfaSettings />
 
-              <form onSubmit={changePassword} className="settings-form settings-password-form">
+              <form
+                onSubmit={changePassword}
+                className="settings-form settings-password-form"
+              >
                 <label>
                   <span>Senha atual</span>
                   <div className="settings-password-field-row">
@@ -373,7 +440,9 @@ async function deleteAccount() {
                       className="settings-password-visibility-toggle"
                       onClick={() => setShowNewPassword((value) => !value)}
                       aria-label={
-                        showNewPassword ? "Ocultar nova senha" : "Mostrar nova senha"
+                        showNewPassword
+                          ? "Ocultar nova senha"
+                          : "Mostrar nova senha"
                       }
                       aria-pressed={showNewPassword}
                     >
@@ -413,29 +482,49 @@ async function deleteAccount() {
                     </button>
                   </div>
                 </label>
-                <button className="settings-save" type="submit" disabled={savingPassword}>
-                  {passwordSaved ? <Check size={15} /> : <LockKeyhole size={15} />}
-                  {savingPassword ? "Alterando..." : passwordSaved ? "Senha alterada" : "Alterar senha"}
+                <button
+                  className="settings-save"
+                  type="submit"
+                  disabled={savingPassword}
+                >
+                  {passwordSaved ? (
+                    <Check size={15} />
+                  ) : (
+                    <LockKeyhole size={15} />
+                  )}
+                  {savingPassword
+                    ? "Alterando..."
+                    : passwordSaved
+                      ? "Senha alterada"
+                      : "Alterar senha"}
                 </button>
               </form>
             </section>
 
             <SettingsPrivacyCard />
 
-            <section className="settings-card settings-danger-card" id="zona-de-perigo">
+            <section
+              className="settings-card settings-danger-card"
+              id="zona-de-perigo"
+            >
               <button
                 type="button"
                 className="settings-danger-toggle"
                 onClick={() => setDangerOpen((value) => !value)}
                 aria-expanded={dangerOpen}
               >
-                <span className="settings-danger-icon"><AlertTriangle size={18} /></span>
+                <span className="settings-danger-icon">
+                  <AlertTriangle size={18} />
+                </span>
                 <span className="settings-danger-title">
                   <small>CONTA</small>
                   <strong>Zona de perigo</strong>
                   <em>Opções permanentes da sua conta.</em>
                 </span>
-                <ChevronDown className={dangerOpen ? "is-open" : ""} size={17} />
+                <ChevronDown
+                  className={dangerOpen ? "is-open" : ""}
+                  size={17}
+                />
               </button>
 
               {dangerOpen && (
@@ -443,17 +532,24 @@ async function deleteAccount() {
                   <div className="settings-danger-copy">
                     <div>
                       <strong>Excluir conta permanentemente</strong>
-                      <p>Esta ação é irreversível. Sua conta e os dados vinculados a ela serão removidos.</p>
+                      <p>
+                        Esta ação é irreversível. Sua conta e os dados
+                        vinculados a ela serão removidos.
+                      </p>
                     </div>
                     <Trash2 size={18} />
                   </div>
 
                   <div className="settings-delete-confirmation">
                     <label>
-                      <span>Para confirmar, digite <b>{confirmationText}</b></span>
+                      <span>
+                        Para confirmar, digite <b>{confirmationText}</b>
+                      </span>
                       <input
                         value={deleteConfirmation}
-                        onChange={(event) => setDeleteConfirmation(event.target.value)}
+                        onChange={(event) =>
+                          setDeleteConfirmation(event.target.value)
+                        }
                         placeholder={confirmationText}
                         autoComplete="off"
                         spellCheck={false}
@@ -465,10 +561,15 @@ async function deleteAccount() {
                       type="button"
                       className="settings-delete-button"
                       onClick={deleteAccount}
-                      disabled={deletingAccount || deleteConfirmation !== confirmationText}
+                      disabled={
+                        deletingAccount ||
+                        deleteConfirmation !== confirmationText
+                      }
                     >
                       <Trash2 size={15} />
-                      {deletingAccount ? "Excluindo conta..." : "Excluir minha conta"}
+                      {deletingAccount
+                        ? "Excluindo conta..."
+                        : "Excluir minha conta"}
                     </button>
                   </div>
                 </div>
