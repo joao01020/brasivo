@@ -61,7 +61,15 @@ export default function MandateProfile({ id }: { id: string }) {
   const [followFeedback, setFollowFeedback] = useState(false);
   const [signed, setSigned] = useState(false);
   const [followCount, setFollowCount] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"activity" | "expenses" | "projects">(() => searchParams.get("tab") === "expenses" ? "expenses" : searchParams.get("tab") === "projects" ? "projects" : "activity");
+  const [activeTab, setActiveTab] = useState<
+    "activity" | "expenses" | "projects"
+  >(() =>
+    searchParams.get("tab") === "expenses"
+      ? "expenses"
+      : searchParams.get("tab") === "projects"
+        ? "projects"
+        : "activity",
+  );
   const [expenseYear, setExpenseYear] = useState(new Date().getFullYear());
   const [expenses, setExpenses] = useState<MandateExpenseSummary | null>(null);
   const [expensesLoading, setExpensesLoading] = useState(false);
@@ -123,17 +131,13 @@ export default function MandateProfile({ id }: { id: string }) {
       cache: "no-store",
     })
       .then((response) =>
-        response.ok
-          ? response.json()
-          : { count: 0, available: false },
+        response.ok ? response.json() : { count: 0, available: false },
       )
       .then((followers) => {
         if (!active) return;
 
         setFollowCount(
-          followers?.available === false
-            ? null
-            : Number(followers?.count ?? 0),
+          followers?.available === false ? null : Number(followers?.count ?? 0),
         );
       })
       .catch((reason) => {
@@ -163,7 +167,9 @@ export default function MandateProfile({ id }: { id: string }) {
         .maybeSingle();
       if (active) setFollowing(Boolean(followRecord));
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   useEffect(() => {
@@ -172,16 +178,11 @@ export default function MandateProfile({ id }: { id: string }) {
 
     setExpensesLoading(true);
 
-    fetch(
-      `/api/mandates/${id}/expenses?year=${expenseYear}`,
-      {
-        cache: "no-store",
-        signal: controller.signal,
-      },
-    )
-      .then((response) =>
-        response.ok ? response.json() : Promise.reject(),
-      )
+    fetch(`/api/mandates/${id}/expenses?year=${expenseYear}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
       .then((payload) => {
         if (active) setExpenses(payload);
       })
@@ -199,8 +200,25 @@ export default function MandateProfile({ id }: { id: string }) {
     };
   }, [expenseYear, id]);
 
-  const money = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
-  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const money = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  const monthNames = [
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+  ];
 
   async function toggleFollowing() {
     if (!mandate || followBusy) return;
@@ -212,7 +230,9 @@ export default function MandateProfile({ id }: { id: string }) {
     setFollowBusy(true);
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         window.location.href = `/login?next=/mandate/${id}`;
         return;
@@ -227,9 +247,16 @@ export default function MandateProfile({ id }: { id: string }) {
           .eq("representative_external_id", String(mandate.id));
         if (!error) {
           setFollowing(false);
-          setFollowCount((current) => current === null ? null : Math.max(0, current - 1));
-          const refreshed = await fetch(`/api/mandates/${id}/followers`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null);
-          if (refreshed?.available) setFollowCount(Number(refreshed.count ?? 0));
+          setFollowCount((current) =>
+            current === null ? null : Math.max(0, current - 1),
+          );
+          const refreshed = await fetch(`/api/mandates/${id}/followers`, {
+            cache: "no-store",
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
+          if (refreshed?.available)
+            setFollowCount(Number(refreshed.count ?? 0));
         }
       } else {
         const { error } = await supabase.from("representative_follows").upsert(
@@ -241,19 +268,27 @@ export default function MandateProfile({ id }: { id: string }) {
             representative_office: mandate.office,
             representative_state: mandate.state,
           },
-          { onConflict: "user_id,representative_source,representative_external_id" },
+          {
+            onConflict:
+              "user_id,representative_source,representative_external_id",
+          },
         );
         if (!error) {
           setFollowing(true);
 
-        setFollowFeedback(true);
+          setFollowFeedback(true);
 
-        window.setTimeout(() => {
-          setFollowFeedback(false);
-        }, 1200);
-          setFollowCount((current) => current === null ? null : current + 1);
-          const refreshed = await fetch(`/api/mandates/${id}/followers`, { cache: "no-store" }).then((r) => r.ok ? r.json() : null).catch(() => null);
-          if (refreshed?.available) setFollowCount(Number(refreshed.count ?? 0));
+          window.setTimeout(() => {
+            setFollowFeedback(false);
+          }, 1200);
+          setFollowCount((current) => (current === null ? null : current + 1));
+          const refreshed = await fetch(`/api/mandates/${id}/followers`, {
+            cache: "no-store",
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null);
+          if (refreshed?.available)
+            setFollowCount(Number(refreshed.count ?? 0));
         }
       }
     } finally {
@@ -262,35 +297,47 @@ export default function MandateProfile({ id }: { id: string }) {
   }
 
   if (loading) return <MandateProfileInitialLoading />;
-  if (!mandate) return <main className="parliamentary-page"><div className="profile-loading">Não foi possível carregar este mandato.</div></main>;
+  if (!mandate)
+    return (
+      <main className="parliamentary-page">
+        <div className="profile-loading">
+          Não foi possível carregar este mandato.
+        </div>
+      </main>
+    );
 
   return (
     <main className="parliamentary-page">
       <header className="parliamentary-topbar">
-        <Link className="brand" href="/"><span>BR</span><b>A</b><span>SIVO</span></Link>
-        <div className="page-header-right"><Link className="parliamentary-back" href={`/state/${mandate.state}`}><ArrowLeft size={15} />Voltar para {mandate.state}</Link><AccountHeaderActions /></div>
+        <Link className="brand" href="/">
+          <span>BR</span>
+          <b>A</b>
+          <span>SIVO</span>
+        </Link>
+        <div className="page-header-right">
+          <Link className="parliamentary-back" href={`/state/${mandate.state}`}>
+            <ArrowLeft size={15} />
+            Voltar para {mandate.state}
+          </Link>
+          <AccountHeaderActions />
+        </div>
       </header>
 
       <section className="parliamentary-profile">
         <div className="profile-hero">
           <img src={mandate.photoUrl} alt="" aria-hidden="true" />
           <div className="profile-hero-copy">
-            <span>{mandate.office.toUpperCase()} · {mandate.state}</span>
+            <span>
+              {mandate.office.toUpperCase()} · {mandate.state}
+            </span>
             <h1>{mandate.name}</h1>
             <div className="mandate-status-row">
-            <span className="mandate-status-party">
-              {mandate.party}
-            </span>
+              <span className="mandate-status-party">{mandate.party}</span>
 
-            <span
-              className="mandate-status-dot"
-              aria-hidden="true"
-            />
+              <span className="mandate-status-dot" aria-hidden="true" />
 
-            <span className="mandate-status-text">
-              Ativo
-            </span>
-          </div>
+              <span className="mandate-status-text">Ativo</span>
+            </div>
             <div className="profile-actions">
               <button
                 className={[
@@ -303,15 +350,8 @@ export default function MandateProfile({ id }: { id: string }) {
                 disabled={followBusy}
                 onClick={toggleFollowing}
               >
-                <span
-                  className="follow-button-bell"
-                  aria-hidden="true"
-                >
-                  {following ? (
-                    <BellRing size={16} />
-                  ) : (
-                    <BellPlus size={16} />
-                  )}
+                <span className="follow-button-bell" aria-hidden="true">
+                  {following ? <BellRing size={16} /> : <BellPlus size={16} />}
                 </span>
 
                 <span className="follow-button-label">
@@ -319,10 +359,12 @@ export default function MandateProfile({ id }: { id: string }) {
                     ? "Aguarde…"
                     : following
                       ? "Observando"
-                      : "Acompanhar"}
+                      : "Observar"}
                 </span>
               </button>
-              <a href={mandate.sourceUrl} target="_blank" rel="noreferrer">Fonte oficial <ExternalLink size={14} /></a>
+              <a href={mandate.sourceUrl} target="_blank" rel="noreferrer">
+                Fonte oficial <ExternalLink size={14} />
+              </a>
             </div>
             {followCount !== null && (
               <div className="mandate-follow-row">
@@ -330,10 +372,16 @@ export default function MandateProfile({ id }: { id: string }) {
                   <Users size={14} />
                   <span>{followLabel(followCount)}</span>
                 </div>
-                <span className="mandate-follow-info" tabIndex={0} aria-label="Sobre a contagem de observações">
+                <span
+                  className="mandate-follow-info"
+                  tabIndex={0}
+                  aria-label="Sobre a contagem de observações"
+                >
                   <CircleHelp size={15} />
                   <span className="mandate-follow-tooltip" role="tooltip">
-                    Quantidade de contas do BRASIVO que escolheram observar atualizações deste mandato. Observar não representa apoio, aprovação ou intenção de voto.
+                    Quantidade de contas do BRASIVO que escolheram observar
+                    atualizações deste mandato. Observar não representa apoio,
+                    aprovação ou intenção de voto.
                   </span>
                 </span>
               </div>
@@ -345,10 +393,32 @@ export default function MandateProfile({ id }: { id: string }) {
 
         <div className="profile-columns">
           <article className="profile-main-card mandate-records-card">
-            <div className="mandate-tabs" role="tablist" aria-label="Dados do mandato">
-              <button className={activeTab === "activity" ? "is-active" : ""} onClick={() => setActiveTab("activity")}><CalendarDays size={14} />Atividade</button>
-              <button className={activeTab === "expenses" ? "is-active" : ""} onClick={() => setActiveTab("expenses")}><Receipt size={14} />Despesas</button>
-              <button className={activeTab === "projects" ? "is-active" : ""} onClick={() => setActiveTab("projects")}><FileText size={14} />Projetos e resultados</button>
+            <div
+              className="mandate-tabs"
+              role="tablist"
+              aria-label="Dados do mandato"
+            >
+              <button
+                className={activeTab === "activity" ? "is-active" : ""}
+                onClick={() => setActiveTab("activity")}
+              >
+                <CalendarDays size={14} />
+                Atividade
+              </button>
+              <button
+                className={activeTab === "expenses" ? "is-active" : ""}
+                onClick={() => setActiveTab("expenses")}
+              >
+                <Receipt size={14} />
+                Despesas
+              </button>
+              <button
+                className={activeTab === "projects" ? "is-active" : ""}
+                onClick={() => setActiveTab("projects")}
+              >
+                <FileText size={14} />
+                Projetos e resultados
+              </button>
             </div>
 
             {activeTab === "activity" ? (
@@ -357,19 +427,63 @@ export default function MandateProfile({ id }: { id: string }) {
               <MandateProjectsPanel mandateId={id} />
             ) : (
               <div className="mandate-expenses">
-                <div className="profile-section-heading expenses-heading"><div><small>CEAP · DADOS OFICIAIS</small><h2>Despesas do mandato</h2></div>
-                  <select value={expenseYear} onChange={(event) => setExpenseYear(Number(event.target.value))} aria-label="Ano das despesas">
-                    {[0,1,2,3].map((offset) => { const year = new Date().getFullYear() - offset; return <option key={year} value={year}>{year}</option>; })}
+                <div className="profile-section-heading expenses-heading">
+                  <div>
+                    <small>CEAP · DADOS OFICIAIS</small>
+                    <h2>Despesas do mandato</h2>
+                  </div>
+                  <select
+                    value={expenseYear}
+                    onChange={(event) =>
+                      setExpenseYear(Number(event.target.value))
+                    }
+                    aria-label="Ano das despesas"
+                  >
+                    {[0, 1, 2, 3].map((offset) => {
+                      const year = new Date().getFullYear() - offset;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
-                <div className="expense-context"><Info size={14}/><span>Valores da Cota para o Exercício da Atividade Parlamentar (CEAP). O total usa o valor líquido registrado pela Câmara e não representa todos os custos relacionados ao mandato.</span></div>
+                <div className="expense-context">
+                  <Info size={14} />
+                  <span>
+                    Valores da Cota para o Exercício da Atividade Parlamentar
+                    (CEAP). O total usa o valor líquido registrado pela Câmara e
+                    não representa todos os custos relacionados ao mandato.
+                  </span>
+                </div>
                 {expensesLoading ? (
-                <MandateSectionSkeleton variant="expenses" />
-              ) : expenses ? (
+                  <MandateSectionSkeleton variant="expenses" />
+                ) : expenses ? (
                   <>
                     <div className="expense-summary-grid has-return-card">
-                      <div><small>VALOR USADO DA COTA</small><strong>{expenses.status === "available" ? money(expenses.totalNet) : "Indisponível"}</strong><span>{expenseYear}</span></div>
-                      <div><small>REGISTROS DE DESPESA</small><strong>{expenses.status === "available" ? expenses.totalDocuments.toLocaleString("pt-BR") : "—"}</strong><span>{expenses.sourceKind === "dataset" ? "lançamentos do arquivo oficial CEAP" : "documentos/lançamentos retornados"}</span></div>
+                      <div>
+                        <small>VALOR USADO DA COTA</small>
+                        <strong>
+                          {expenses.status === "available"
+                            ? money(expenses.totalNet)
+                            : "Indisponível"}
+                        </strong>
+                        <span>{expenseYear}</span>
+                      </div>
+                      <div>
+                        <small>REGISTROS DE DESPESA</small>
+                        <strong>
+                          {expenses.status === "available"
+                            ? expenses.totalDocuments.toLocaleString("pt-BR")
+                            : "—"}
+                        </strong>
+                        <span>
+                          {expenses.sourceKind === "dataset"
+                            ? "lançamentos do arquivo oficial CEAP"
+                            : "documentos/lançamentos retornados"}
+                        </span>
+                      </div>
                       <ExpenseReturnSummaryCard
                         restitution={
                           (
@@ -384,29 +498,43 @@ export default function MandateProfile({ id }: { id: string }) {
                         year={expenseYear}
                       />
                     </div>
-                    {expenses.note && <div className="expense-context"><Info size={14}/><span>{expenses.note}</span>{expenses.sourceUrl && <a href={expenses.sourceUrl} target="_blank" rel="noreferrer">Fonte oficial <ExternalLink size={11}/></a>}</div>}
+                    {expenses.note && (
+                      <div className="expense-context">
+                        <Info size={14} />
+                        <span>{expenses.note}</span>
+                        {expenses.sourceUrl && (
+                          <a
+                            href={expenses.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Fonte oficial <ExternalLink size={11} />
+                          </a>
+                        )}
+                      </div>
+                    )}
                     <ExpenseRestitutionPanel
-                        restitution={
-                          (
-                            expenses as unknown as {
-                              restitution?: {
-                                total: number;
-                                count: number;
-                                recent: Array<{
-                                  id: string;
-                                  value: number;
-                                  paidAt: string | null;
-                                  officialDocumentId: string | null;
-                                  documentNumber: string | null;
-                                  category: string | null;
-                                  supplier: string | null;
-                                  sourceUrl: string;
-                                }>;
-                              };
-                            }
-                          ).restitution
-                        }
-                      />
+                      restitution={
+                        (
+                          expenses as unknown as {
+                            restitution?: {
+                              total: number;
+                              count: number;
+                              recent: Array<{
+                                id: string;
+                                value: number;
+                                paidAt: string | null;
+                                officialDocumentId: string | null;
+                                documentNumber: string | null;
+                                category: string | null;
+                                supplier: string | null;
+                                sourceUrl: string;
+                              }>;
+                            };
+                          }
+                        ).restitution
+                      }
+                    />
                     <section className="expense-section">
                       <div className="expense-section-title">
                         <h3>Por categoria</h3>
@@ -450,20 +578,107 @@ export default function MandateProfile({ id }: { id: string }) {
                         </div>
                       )}
                     </section>
-                    <section className="expense-section"><div className="expense-section-title"><h3>Por mês</h3><span>{expenseYear}</span></div>{(() => {
-                      const max = Math.max(...expenses.months.map((item) => Math.abs(item.value)), 1);
-                      const points = expenses.months.map((month, index) => {
-                        const x = ((index + 0.5) / expenses.months.length) * 100;
-                        const height = month.value ? Math.max(3, Math.abs(month.value) / max * 100) : 0;
-                        return `${x},${100 - height}`;
-                      }).join(" ");
-                      return <div className="expense-month-chart"><div className="expense-month-line" aria-hidden="true"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points={points}/>{expenses.months.map((month,index) => { const x=((index+.5)/expenses.months.length)*100; const height=month.value?Math.max(3,Math.abs(month.value)/max*100):0; return <circle key={month.month} cx={x} cy={100-height} r="1.15"/>; })}</svg></div><div className="expense-months">{expenses.months.map((month,index) => {
-                        const previous = index > 0 ? expenses.months[index - 1].value : 0;
-                        const variation = previous > 0 ? ((month.value - previous) / previous) * 100 : null;
-                        const variationLabel = variation === null ? "Sem base no mês anterior" : `${variation >= 0 ? "+" : ""}${variation.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% vs. ${monthNames[index - 1]}`;
-                        return <div className="expense-month-item" key={month.month} tabIndex={0}><div className="expense-month-tooltip"><strong>{monthNames[month.month-1]} · {money(month.value)}</strong><span>{variationLabel}</span></div><div className="expense-month-track"><i style={{height:`${month.value ? Math.max(3,Math.abs(month.value)/max*100) : 0}%`}}/></div><span>{monthNames[month.month-1]}</span><small>{month.value ? money(month.value) : "—"}</small></div>;
-                      })}</div></div>;
-                    })()}</section>
+                    <section className="expense-section">
+                      <div className="expense-section-title">
+                        <h3>Por mês</h3>
+                        <span>{expenseYear}</span>
+                      </div>
+                      {(() => {
+                        const max = Math.max(
+                          ...expenses.months.map((item) =>
+                            Math.abs(item.value),
+                          ),
+                          1,
+                        );
+                        const points = expenses.months
+                          .map((month, index) => {
+                            const x =
+                              ((index + 0.5) / expenses.months.length) * 100;
+                            const height = month.value
+                              ? Math.max(3, (Math.abs(month.value) / max) * 100)
+                              : 0;
+                            return `${x},${100 - height}`;
+                          })
+                          .join(" ");
+                        return (
+                          <div className="expense-month-chart">
+                            <div
+                              className="expense-month-line"
+                              aria-hidden="true"
+                            >
+                              <svg
+                                viewBox="0 0 100 100"
+                                preserveAspectRatio="none"
+                              >
+                                <polyline points={points} />
+                                {expenses.months.map((month, index) => {
+                                  const x =
+                                    ((index + 0.5) / expenses.months.length) *
+                                    100;
+                                  const height = month.value
+                                    ? Math.max(
+                                        3,
+                                        (Math.abs(month.value) / max) * 100,
+                                      )
+                                    : 0;
+                                  return (
+                                    <circle
+                                      key={month.month}
+                                      cx={x}
+                                      cy={100 - height}
+                                      r="1.15"
+                                    />
+                                  );
+                                })}
+                              </svg>
+                            </div>
+                            <div className="expense-months">
+                              {expenses.months.map((month, index) => {
+                                const previous =
+                                  index > 0
+                                    ? expenses.months[index - 1].value
+                                    : 0;
+                                const variation =
+                                  previous > 0
+                                    ? ((month.value - previous) / previous) *
+                                      100
+                                    : null;
+                                const variationLabel =
+                                  variation === null
+                                    ? "Sem base no mês anterior"
+                                    : `${variation >= 0 ? "+" : ""}${variation.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% vs. ${monthNames[index - 1]}`;
+                                return (
+                                  <div
+                                    className="expense-month-item"
+                                    key={month.month}
+                                    tabIndex={0}
+                                  >
+                                    <div className="expense-month-tooltip">
+                                      <strong>
+                                        {monthNames[month.month - 1]} ·{" "}
+                                        {money(month.value)}
+                                      </strong>
+                                      <span>{variationLabel}</span>
+                                    </div>
+                                    <div className="expense-month-track">
+                                      <i
+                                        style={{
+                                          height: `${month.value ? Math.max(3, (Math.abs(month.value) / max) * 100) : 0}%`,
+                                        }}
+                                      />
+                                    </div>
+                                    <span>{monthNames[month.month - 1]}</span>
+                                    <small>
+                                      {month.value ? money(month.value) : "—"}
+                                    </small>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </section>
                     <section className="expense-section">
                       <div className="expense-section-title">
                         <h3>Registros recentes</h3>
@@ -476,20 +691,73 @@ export default function MandateProfile({ id }: { id: string }) {
                       />
                     </section>
                   </>
-                ) : <div className="profile-empty">Não foi possível consultar as despesas deste período. Nenhum valor zero será presumido sem confirmação oficial.</div>}
+                ) : (
+                  <div className="profile-empty">
+                    Não foi possível consultar as despesas deste período. Nenhum
+                    valor zero será presumido sem confirmação oficial.
+                  </div>
+                )}
               </div>
             )}
           </article>
-          <aside className="profile-info-card"><small>INFORMAÇÕES</small><dl>
-            <div><dt>Nome civil</dt><dd>{mandate.civilName || "—"}</dd></div>
-            <div><dt>Partido</dt><dd>{mandate.party}</dd></div>
-            <div><dt>UF</dt><dd>{mandate.state}</dd></div>
-            <div><dt>Cargo</dt><dd>{mandate.office}</dd></div>
-            <div><dt>Despesas registradas ({expenseYear})</dt><dd>{expensesLoading ? "Consultando…" : expenses?.status === "available" ? money(expenses.totalNet) : "Indisponível"}</dd></div>
-            <div><dt>Última despesa</dt><dd>{expensesLoading ? "Consultando…" : expenses?.status === "available" && expenses.recent.length ? money(expenses.recent[0].netValue) : "Indisponível"}</dd></div>
-            {expenses?.status === "available" && expenses.recent[0]?.issuedAt && <div><dt>Data da última despesa</dt><dd>{new Date(`${expenses.recent[0].issuedAt}T12:00:00`).toLocaleDateString("pt-BR")}</dd></div>}
-            {mandate.email && <div><dt>E-mail institucional</dt><dd>{mandate.email}</dd></div>}
-          </dl></aside>
+          <aside className="profile-info-card">
+            <small>INFORMAÇÕES</small>
+            <dl>
+              <div>
+                <dt>Nome civil</dt>
+                <dd>{mandate.civilName || "—"}</dd>
+              </div>
+              <div>
+                <dt>Partido</dt>
+                <dd>{mandate.party}</dd>
+              </div>
+              <div>
+                <dt>UF</dt>
+                <dd>{mandate.state}</dd>
+              </div>
+              <div>
+                <dt>Cargo</dt>
+                <dd>{mandate.office}</dd>
+              </div>
+              <div>
+                <dt>Despesas registradas ({expenseYear})</dt>
+                <dd>
+                  {expensesLoading
+                    ? "Consultando…"
+                    : expenses?.status === "available"
+                      ? money(expenses.totalNet)
+                      : "Indisponível"}
+                </dd>
+              </div>
+              <div>
+                <dt>Última despesa</dt>
+                <dd>
+                  {expensesLoading
+                    ? "Consultando…"
+                    : expenses?.status === "available" && expenses.recent.length
+                      ? money(expenses.recent[0].netValue)
+                      : "Indisponível"}
+                </dd>
+              </div>
+              {expenses?.status === "available" &&
+                expenses.recent[0]?.issuedAt && (
+                  <div>
+                    <dt>Data da última despesa</dt>
+                    <dd>
+                      {new Date(
+                        `${expenses.recent[0].issuedAt}T12:00:00`,
+                      ).toLocaleDateString("pt-BR")}
+                    </dd>
+                  </div>
+                )}
+              {mandate.email && (
+                <div>
+                  <dt>E-mail institucional</dt>
+                  <dd>{mandate.email}</dd>
+                </div>
+              )}
+            </dl>
+          </aside>
         </div>
       </section>
     </main>
