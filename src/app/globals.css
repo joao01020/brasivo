@@ -2326,6 +2326,15 @@ footer > span:first-child {
   background: #21e77c;
   box-shadow: 0 0 10px rgba(33, 231, 124, 0.5);
 }
+.notification-representative {
+  display: block;
+  margin-bottom: 5px;
+  color: #4fcf8b;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
 .notification-item strong {
   display: block;
   font-size: 11px;
@@ -8754,4 +8763,398 @@ button.followed-expense-trend {
 
 .account-header-actions .account-dashboard-button {
   border-radius: 50%;
+}
+
+/* ============================================================
+   BRASIVO — ACCOUNT POPOVER STACKING FIX
+
+   .parliamentary-topbar usa backdrop-filter. Isso cria um stacking
+   context próprio. Sem z-index explícito, o conteúdo renderizado
+   depois do header (ex.: resumo do mandato) pode ser pintado acima
+   dos popovers, mesmo quando o popover possui z-index alto.
+
+   A correção eleva o stacking context do header inteiro e mantém
+   os anchors/popovers visíveis sem alterar a geometria da página.
+   ============================================================ */
+
+.parliamentary-topbar {
+  position: relative;
+  z-index: 1000;
+  overflow: visible;
+}
+
+.parliamentary-topbar .page-header-right,
+.parliamentary-topbar .account-header-actions,
+.parliamentary-topbar .dashboard-menu-anchor {
+  position: relative;
+  overflow: visible;
+}
+
+.parliamentary-topbar .page-header-right {
+  z-index: 1;
+}
+
+.parliamentary-topbar .account-header-actions {
+  z-index: 2;
+}
+
+.parliamentary-topbar .notification-popover,
+.parliamentary-topbar .profile-popover {
+  z-index: 1200;
+}
+
+/*
+ * Mantém a mesma proteção na página de configurações, cujo topbar
+ * também usa backdrop-filter e já possui seu próprio stacking context.
+ */
+.settings-topbar {
+  overflow: visible;
+}
+
+.settings-topbar .account-header-actions,
+.settings-topbar .dashboard-menu-anchor {
+  position: relative;
+  overflow: visible;
+}
+
+.settings-topbar .notification-popover,
+.settings-topbar .profile-popover {
+  z-index: 1200;
+}
+
+/* ============================================================
+   DASHBOARD — NOTIFICAÇÕES SINCRONIZADAS
+   Mantém o feed com o mesmo contexto visual do popover.
+   ============================================================ */
+.dashboard-feed-representative {
+  display: block;
+  margin-bottom: 4px;
+  color: #4fcf8b !important;
+  font-size: 7px !important;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+}
+
+.dashboard-feed-date {
+  display: block;
+  margin-top: 7px;
+}
+
+.dashboard-feed-more {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 0 2px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: #6f7f84;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.dashboard-feed-more:hover {
+  color: #c8d3d0;
+}
+
+.dashboard-feed-more svg {
+  transition: transform 160ms ease;
+}
+
+.dashboard-feed-more.is-expanded svg {
+  transform: rotate(90deg);
+}
+
+/* ============================================================
+   BRASIVO — NOTIFICAÇÕES ORGANIZADAS E AGRUPADAS
+   Central e dashboard no mesmo padrão visual.
+   ============================================================ */
+.notification-popover {
+  width: min(520px, calc(100vw - 30px));
+}
+
+.notification-tabs {
+  padding: 14px 16px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid #132027;
+}
+
+.notification-tab-button {
+  min-height: 34px;
+  padding: 0 16px;
+  border: 1px solid #193038;
+  border-radius: 999px;
+  background: rgba(8, 15, 18, 0.88);
+  color: #a7b4b8;
+  font: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.notification-tab-button:hover {
+  border-color: #235345;
+  color: #ecf4f1;
+}
+
+.notification-tab-button.is-active {
+  border-color: rgba(33, 231, 124, 0.45);
+  background: linear-gradient(
+    180deg,
+    rgba(41, 224, 130, 0.95),
+    rgba(29, 193, 112, 0.88)
+  );
+  color: #04110a;
+  font-weight: 700;
+}
+
+.notification-group-list {
+  max-height: 560px;
+  padding: 14px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notification-group-card {
+  border: 1px solid #173038;
+  border-radius: 18px;
+  background: radial-gradient(
+    circle at top,
+    rgba(8, 26, 27, 0.76),
+    rgba(6, 14, 18, 0.92)
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.notification-group-card.is-unread {
+  border-color: rgba(33, 231, 124, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.02),
+    0 0 0 1px rgba(33, 231, 124, 0.06);
+}
+
+.notification-group-header {
+  padding: 18px 18px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.notification-group-marker {
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #65767c;
+}
+
+.notification-group-card.is-unread .notification-group-marker {
+  background: #21e77c;
+  box-shadow: 0 0 12px rgba(33, 231, 124, 0.48);
+}
+
+.notification-group-copy strong {
+  display: block;
+  font-size: 14px;
+  letter-spacing: -0.2px;
+}
+
+.notification-group-kinds {
+  padding: 0 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-kind-row {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 4px;
+  display: grid;
+  grid-template-columns: 18px minmax(84px, auto) minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-top: 1px solid #132127;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.notification-kind-row:hover {
+  background: rgba(11, 22, 26, 0.54);
+}
+
+.notification-kind-icon {
+  color: #7fdba8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notification-kind-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #edf5f1;
+}
+
+.notification-kind-preview {
+  min-width: 0;
+  color: #7c8b90;
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notification-kind-row svg:last-child {
+  color: #75858b;
+}
+
+.notification-group-footer {
+  padding: 12px 18px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notification-group-footer time {
+  color: #7a8b91;
+  font-size: 10px;
+}
+
+.notification-group-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: #4fe091;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-group-link:hover {
+  color: #84f0b5;
+}
+
+.dashboard-feed {
+  padding-top: 10px;
+}
+
+.dashboard-feed-summary {
+  width: 100%;
+  padding: 13px 0;
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) 16px;
+  gap: 10px;
+  align-items: start;
+  border: 0;
+  border-bottom: 1px solid #142027;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dashboard-feed-summary > i {
+  width: 8px;
+  height: 8px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #31d77b;
+  box-shadow: 0 0 10px rgba(49, 215, 123, 0.4);
+}
+
+.dashboard-feed-summary-body {
+  min-width: 0;
+}
+
+.dashboard-feed-summary strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+}
+
+.dashboard-feed-summary p {
+  margin: 0;
+  color: #68777c;
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.dashboard-feed-summary-arrow {
+  margin-top: 2px;
+  color: #728289;
+}
+
+.dashboard-feed-summary:hover .dashboard-feed-summary-arrow {
+  color: #dde8e5;
+  transform: translateX(1px);
+}
+
+/* ============================================================
+   BRASIVO — AÇÕES DE NOTIFICAÇÃO + DATA COMPACTA
+   ============================================================ */
+.notification-center-footer {
+  padding: 6px 4px 2px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.notification-clear-all,
+.dashboard-feed-clear {
+  border: 0;
+  background: transparent;
+  color: #6d7d83;
+  font: inherit;
+  font-size: 8px;
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.notification-clear-all {
+  padding: 9px 10px 5px;
+}
+
+.notification-clear-all:hover,
+.dashboard-feed-clear:hover {
+  color: #e0e8e5;
+}
+
+.dashboard-feed-actions {
+  min-height: 38px;
+  padding-top: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 14px;
+}
+
+.dashboard-feed-actions .dashboard-feed-more {
+  width: auto;
+  min-height: 30px;
+  padding: 0;
+}
+
+.dashboard-feed-summary .dashboard-feed-date {
+  display: block;
+  margin-top: 6px;
+  color: #526168 !important;
+  font-size: 7px !important;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: 0;
 }

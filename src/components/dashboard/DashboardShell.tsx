@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bell,
+  ChevronRight,
   Info,
   Minus,
   ShieldCheck,
@@ -12,11 +13,19 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import DashboardUserAvatar from "@/components/account/DashboardUserAvatar";
 import { createClient } from "@/lib/supabase/client";
 import DashboardHeader, { DashboardNotification } from "./DashboardHeader";
+import {
+  groupNotifications,
+  normalizeNotificationRow,
+} from "@/lib/notifications/presentation";
+import {
+  publishNotificationSync,
+  subscribeNotificationSync,
+} from "@/lib/notifications/sync";
 
 type ExpenseTrend = {
   current: number;
@@ -294,9 +303,78 @@ export default function DashboardShell(props: Props = {}) {
     props.unreadNotifications ?? 0,
   );
 
+  const [activityExpanded, setActivityExpanded] = useState(false);
+
+  const groupedNotifications = useMemo(
+    () => groupNotifications(notifications, "all"),
+    [notifications],
+  );
+
   const [followedMandates, setFollowedMandates] = useState<Followed[]>(
     props.followedMandates ?? [],
   );
+
+  const refreshNotificationState = useCallback(async () => {
+    const client = createClient();
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    const user = session?.user;
+    if (!user) return;
+
+    const [{ data: notificationRows }, { data: followRows }] =
+      await Promise.all([
+        client
+          .from("notifications")
+          .select(
+            "id,title,message,source_url,representative_external_id,representative_name,kind,metadata,occurred_at,created_at,read_at",
+          )
+          .eq("user_id", user.id)
+          .is("read_at", null)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        client
+          .from("representative_follows")
+          .select("representative_external_id,created_at")
+          .eq("user_id", user.id)
+          .eq("representative_source", "camara"),
+      ]);
+
+    const accountCreatedAt = new Date(user.created_at).getTime();
+    const followedAtByRepresentative = new Map(
+      (followRows ?? []).map((row) => [
+        String(row.representative_external_id),
+        new Date(row.created_at).getTime(),
+      ]),
+    );
+
+    const next = (notificationRows ?? [])
+      .map((row) => normalizeNotificationRow(row))
+      .filter((item) => {
+        const createdAt = new Date(item.createdAt).getTime();
+
+        if (Number.isFinite(accountCreatedAt) && createdAt < accountCreatedAt) {
+          return false;
+        }
+
+        if (!item.representativeExternalId) return true;
+
+        const followedAt = followedAtByRepresentative.get(
+          String(item.representativeExternalId),
+        );
+
+        return (
+          followedAt === undefined ||
+          !Number.isFinite(followedAt) ||
+          createdAt >= followedAt
+        );
+      })
+      .slice(0, 30);
+
+    setNotifications(next);
+    setUnreadNotifications(next.length);
+  }, []);
 
   /*
    * baseReady:
@@ -366,12 +444,17 @@ export default function DashboardShell(props: Props = {}) {
                 "title",
                 "message",
                 "source_url",
+                "representative_external_id",
+                "representative_name",
+                "kind",
+                "metadata",
                 "occurred_at",
                 "created_at",
                 "read_at",
               ].join(","),
             )
             .eq("user_id", user.id)
+            .is("read_at", null)
             .order("created_at", {
               ascending: false,
             })
@@ -409,37 +492,73 @@ export default function DashboardShell(props: Props = {}) {
           userEmail.split("@")[0] ||
           "você";
 
-        const mappedNotifications = (
-            (notificationRows ?? []) as unknown as Array<{
-              id: string;
-              title: string;
-              message: string;
-              source_url: string | null;
-              occurred_at: string | null;
+        const accountCreatedAt = new Date(user.created_at).getTime();
+
+        const followedAtByRepresentative = new Map(
+          (
+            (followedRows ?? []) as unknown as Array<{
+              representative_external_id: string | number;
               created_at: string;
-              read_at: string | null;
             }>
-          ).map((row) => ({
-          id: row.id,
-          title: row.title,
-          message: row.message,
-          sourceUrl: row.source_url,
-          occurredAt: row.occurred_at,
-          createdAt: row.created_at,
-          readAt: row.read_at,
-        }));
+          ).map((row) => [
+            String(row.representative_external_id),
+            new Date(row.created_at).getTime(),
+          ]),
+        );
+
+        const mappedNotifications = (
+          (notificationRows ?? []) as unknown as Array<{
+            id: string;
+            title: string;
+            message: string | null;
+            source_url: string | null;
+            representative_external_id: string | number | null;
+            representative_name: string | null;
+            kind: string | null;
+            metadata: Record<string, unknown> | null;
+            occurred_at: string | null;
+            created_at: string;
+            read_at: string | null;
+          }>
+        )
+          .map((row) => normalizeNotificationRow(row))
+          .filter((item) => {
+            const createdAt = new Date(item.createdAt).getTime();
+
+            if (
+              Number.isFinite(accountCreatedAt) &&
+              createdAt < accountCreatedAt
+            ) {
+              return false;
+            }
+
+            if (!item.representativeExternalId) {
+              return true;
+            }
+
+            const followedAt = followedAtByRepresentative.get(
+              item.representativeExternalId,
+            );
+
+            return (
+              followedAt === undefined ||
+              !Number.isFinite(followedAt) ||
+              createdAt >= followedAt
+            );
+          })
+          .slice(0, 30);
 
         const base = (
-            (followedRows ?? []) as unknown as Array<{
-              id: string;
-              representative_external_id: string | number;
-              representative_source: string;
-              representative_name: string;
-              representative_office: string | null;
-              representative_state: string | null;
-              created_at: string;
-            }>
-          ).map((row) => ({
+          (followedRows ?? []) as unknown as Array<{
+            id: string;
+            representative_external_id: string | number;
+            representative_source: string;
+            representative_name: string;
+            representative_office: string | null;
+            representative_state: string | null;
+            created_at: string;
+          }>
+        ).map((row) => ({
           ...row,
           photoUrl: null,
           expenseTrend: null,
@@ -479,6 +598,11 @@ export default function DashboardShell(props: Props = {}) {
       mounted = false;
     };
   }, [props.displayName, router]);
+
+  useEffect(
+    () => subscribeNotificationSync(() => void refreshNotificationState()),
+    [refreshNotificationState],
+  );
 
   /*
    * ==========================================================
@@ -704,6 +828,48 @@ export default function DashboardShell(props: Props = {}) {
    * ==========================================================
    */
 
+  async function consumeDashboardNotifications(ids: string[]) {
+    if (!ids.length) return;
+
+    const readAt = new Date().toISOString();
+    const { error } = await createClient()
+      .from("notifications")
+      .update({ read_at: readAt })
+      .in("id", ids);
+
+    if (error) return;
+
+    setNotifications((current) =>
+      current.filter((item) => !ids.includes(item.id)),
+    );
+    setUnreadNotifications((current) => Math.max(0, current - ids.length));
+    publishNotificationSync("consume");
+  }
+
+  async function clearDashboardNotifications() {
+    const client = createClient();
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const readAt = new Date().toISOString();
+    const { error } = await client
+      .from("notifications")
+      .update({ read_at: readAt })
+      .eq("user_id", userId)
+      .is("read_at", null);
+
+    if (error) return;
+
+    setNotifications([]);
+    setUnreadNotifications(0);
+    setActivityExpanded(false);
+    publishNotificationSync("clear");
+  }
+
   const loading = !baseReady || !profileDataReady;
 
   const firstName = displayName.trim().split(/\s+/)[0] || "você";
@@ -719,6 +885,8 @@ export default function DashboardShell(props: Props = {}) {
         email={email}
         notifications={notifications}
         unreadNotifications={unreadNotifications}
+        onConsumeNotifications={consumeDashboardNotifications}
+        onClearNotifications={clearDashboardNotifications}
       />
 
       <section className="dashboard-content">
@@ -872,25 +1040,79 @@ export default function DashboardShell(props: Props = {}) {
                 </span>
               </div>
 
-              {notifications.length ? (
+              {groupedNotifications.length ? (
                 <div className="dashboard-feed">
-                  {notifications.slice(0, 8).map((notification) => (
-                    <div className="dashboard-feed-item" key={notification.id}>
+                  {(activityExpanded
+                    ? groupedNotifications
+                    : groupedNotifications.slice(0, 3)
+                  ).map((group) => (
+                    <button
+                      type="button"
+                      className="dashboard-feed-summary"
+                      key={group.id}
+                      onClick={() => {
+                        void consumeDashboardNotifications(
+                          group.items.map((item) => item.id),
+                        ).then(() => router.push(group.href));
+                      }}
+                    >
                       <i />
 
-                      <div>
-                        <strong>{notification.title}</strong>
+                      <div className="dashboard-feed-summary-body">
+                        <span className="dashboard-feed-representative">
+                          {group.representativeName}
+                        </span>
 
-                        {notification.message && <p>{notification.message}</p>}
+                        <strong>{group.headline}</strong>
 
-                        <span>
-                          {new Date(
-                            notification.occurredAt || notification.createdAt,
-                          ).toLocaleDateString("pt-BR")}
+                        <p>{group.breakdownText}</p>
+
+                        <span className="dashboard-feed-date">
+                          {new Intl.DateTimeFormat("pt-BR", {
+                            day: "2-digit",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }).format(new Date(group.latestAt))}
                         </span>
                       </div>
-                    </div>
+
+                      <ChevronRight
+                        size={14}
+                        className="dashboard-feed-summary-arrow"
+                      />
+                    </button>
                   ))}
+
+                  <div className="dashboard-feed-actions">
+                    {groupedNotifications.length > 3 && (
+                      <button
+                        type="button"
+                        className={`dashboard-feed-more ${
+                          activityExpanded ? "is-expanded" : ""
+                        }`}
+                        onClick={() =>
+                          setActivityExpanded((current) => !current)
+                        }
+                        aria-expanded={activityExpanded}
+                      >
+                        <span>
+                          {activityExpanded
+                            ? "Mostrar menos"
+                            : `Ver mais ${groupedNotifications.length - 3}`}
+                        </span>
+                        <ChevronRight size={14} />
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      className="dashboard-feed-clear"
+                      onClick={() => void clearDashboardNotifications()}
+                    >
+                      Limpar tudo
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="dashboard-activity-empty">

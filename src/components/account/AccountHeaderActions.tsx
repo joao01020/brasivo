@@ -1,39 +1,81 @@
 "use client";
 
-
 import MfaSessionGuard from "@/components/auth/MfaSessionGuard";
-import { Bell, LayoutDashboard, X } from "lucide-react";
+import { Bell, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/client";
 import AccountProfileMenu from "@/components/account/AccountProfileMenu";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
+import {
+  normalizeNotificationRow,
+  type NotificationItem,
+} from "@/lib/notifications/presentation";
+import {
+  publishNotificationSync,
+  subscribeNotificationSync,
+} from "@/lib/notifications/sync";
 
-type Item = {
-  id: string;
-  title: string;
-  message: string | null;
-  occurredAt: string | null;
-  createdAt: string;
-  readAt: string | null;
-};
+type Item = NotificationItem;
 
-function dateLabel(value: string) {
-  const date = new Date(value);
+async function loadUnreadNotifications(
+  client: SupabaseClient,
+  user: User,
+): Promise<Item[]> {
+  const [{ data: notificationRows }, { data: followRows }] = await Promise.all([
+    client
+      .from("notifications")
+      .select(
+        "id,title,message,source_url,representative_external_id,representative_name,kind,metadata,occurred_at,created_at,read_at",
+      )
+      .eq("user_id", user.id)
+      .is("read_at", null)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    client
+      .from("representative_follows")
+      .select("representative_external_id,created_at")
+      .eq("user_id", user.id)
+      .eq("representative_source", "camara"),
+  ]);
 
-  return Number.isNaN(date.getTime())
-    ? ""
-    : new Intl.DateTimeFormat("pt-BR", {
-        day: "2-digit",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit",
-      }).format(date);
+  const accountCreatedAt = new Date(user.created_at).getTime();
+  const followedAtByRepresentative = new Map(
+    (followRows ?? []).map((row) => [
+      String(row.representative_external_id),
+      new Date(row.created_at).getTime(),
+    ]),
+  );
+
+  return (notificationRows ?? [])
+    .map((row) => normalizeNotificationRow(row))
+    .filter((item) => {
+      const createdAt = new Date(item.createdAt).getTime();
+
+      if (Number.isFinite(accountCreatedAt) && createdAt < accountCreatedAt) {
+        return false;
+      }
+
+      if (!item.representativeExternalId) {
+        return true;
+      }
+
+      const followedAt = followedAtByRepresentative.get(
+        String(item.representativeExternalId),
+      );
+
+      return (
+        followedAt === undefined ||
+        !Number.isFinite(followedAt) ||
+        createdAt >= followedAt
+      );
+    })
+    .slice(0, 30);
 }
 
 export default function AccountHeaderActions() {
-  const router = useRouter();
   const notificationRef = useRef<HTMLDivElement>(null);
 
   const [ready, setReady] = useState(false);
@@ -43,6 +85,20 @@ export default function AccountHeaderActions() {
   const [items, setItems] = useState<Item[]>([]);
   const [unread, setUnread] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const refreshNotifications = useCallback(async () => {
+    const client = createClient();
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    const user = session?.user;
+    if (!user) return;
+
+    const next = await loadUnreadNotifications(client, user);
+    setItems(next);
+    setUnread(next.length);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -64,22 +120,14 @@ export default function AccountHeaderActions() {
 
       setAuthenticated(true);
 
-      const [{ data: profile }, { data: notificationRows }] =
-        await Promise.all([
-          client
-            .from("profiles")
-            .select("display_name")
-            .eq("user_id", user.id)
-            .maybeSingle(),
-          client
-            .from("notifications")
-            .select(
-              "id,title,message,occurred_at,created_at,read_at",
-            )
-            .eq("user_id", user.id)
-            .order("created_at", { ascending: false })
-            .limit(12),
-        ]);
+      const [{ data: profile }, mapped] = await Promise.all([
+        client
+          .from("profiles")
+          .select("display_name")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        loadUnreadNotifications(client, user),
+      ]);
 
       if (!active) return;
 
@@ -96,18 +144,8 @@ export default function AccountHeaderActions() {
           userEmail.split("@")[0] ||
           "Usuário",
       );
-
-      const mapped = (notificationRows ?? []).map((row) => ({
-        id: row.id,
-        title: row.title,
-        message: row.message,
-        occurredAt: row.occurred_at,
-        createdAt: row.created_at,
-        readAt: row.read_at,
-      }));
-
       setItems(mapped);
-      setUnread(mapped.filter((item) => !item.readAt).length);
+      setUnread(mapped.length);
       setReady(true);
     })();
 
@@ -115,6 +153,11 @@ export default function AccountHeaderActions() {
       active = false;
     };
   }, []);
+
+  useEffect(
+    () => subscribeNotificationSync(() => void refreshNotifications()),
+    [refreshNotifications],
+  );
 
   useEffect(() => {
     function close(event: MouseEvent) {
@@ -135,54 +178,59 @@ export default function AccountHeaderActions() {
     };
   }, []);
 
-  async function toggleNotifications() {
-    const next = !notificationsOpen;
-    setNotificationsOpen(next);
-
-    if (!next || !unread) return;
-
-    const ids = items
-      .filter((item) => !item.readAt)
-      .map((item) => item.id);
-
+  async function consumeNotifications(ids: string[]) {
     if (!ids.length) return;
 
     const readAt = new Date().toISOString();
-
     const { error } = await createClient()
       .from("notifications")
       .update({ read_at: readAt })
       .in("id", ids);
 
-    if (!error) {
-      setItems((current) =>
-        current.map((item) =>
-          ids.includes(item.id)
-            ? { ...item, readAt }
-            : item,
-        ),
-      );
-      setUnread(0);
-    }
+    if (error) return;
+
+    const next = items.filter((item) => !ids.includes(item.id));
+    setItems(next);
+    setUnread(next.length);
+    publishNotificationSync("consume");
+  }
+
+  async function clearAllNotifications() {
+    const client = createClient();
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const readAt = new Date().toISOString();
+    const { error } = await client
+      .from("notifications")
+      .update({ read_at: readAt })
+      .eq("user_id", userId)
+      .is("read_at", null);
+
+    if (error) return;
+
+    setItems([]);
+    setUnread(0);
+    publishNotificationSync("clear");
   }
 
   if (!ready || !authenticated) return null;
 
   return (
     <div className="dashboard-header-actions account-header-actions">
-   <MfaSessionGuard />
-      <div
-        className="dashboard-menu-anchor"
-        ref={notificationRef}
-      >
+      <MfaSessionGuard />
+
+      <div className="dashboard-menu-anchor" ref={notificationRef}>
         <button
-          className={`dashboard-icon-button ${
-            notificationsOpen ? "is-open" : ""
-          }`}
+          className={`dashboard-icon-button ${notificationsOpen ? "is-open" : ""}`}
           type="button"
           aria-label="Notificações"
           aria-expanded={notificationsOpen}
-          onClick={toggleNotifications}
+          onClick={() => setNotificationsOpen((current) => !current)}
         >
           <Bell size={18} />
           {unread > 0 && (
@@ -193,60 +241,12 @@ export default function AccountHeaderActions() {
         </button>
 
         {notificationsOpen && (
-          <div
-            className="notification-popover"
-            role="dialog"
-            aria-label="Notificações"
-          >
-            <div className="popover-heading">
-              <div>
-                <span>CENTRAL</span>
-                <strong>Notificações</strong>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotificationsOpen(false)}
-                aria-label="Fechar notificações"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {items.length === 0 ? (
-              <div className="notification-empty">
-                <div className="notification-empty-icon">
-                  <Bell size={21} />
-                </div>
-                <strong>Nenhuma notificação</strong>
-                <p>
-                  Quando houver uma nova atividade no seu
-                  acompanhamento, ela aparecerá aqui.
-                </p>
-              </div>
-            ) : (
-              <div className="notification-list">
-                {items.map((item) => (
-                  <article
-                    className={`notification-item ${
-                      !item.readAt ? "is-unread" : ""
-                    }`}
-                    key={item.id}
-                  >
-                    <i />
-                    <div>
-                      <strong>{item.title}</strong>
-                      {item.message && <p>{item.message}</p>}
-                      <time>
-                        {dateLabel(
-                          item.occurredAt || item.createdAt,
-                        )}
-                      </time>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </div>
+          <NotificationCenter
+            items={items}
+            onClose={() => setNotificationsOpen(false)}
+            onConsume={consumeNotifications}
+            onClearAll={clearAllNotifications}
+          />
         )}
       </div>
 
@@ -259,10 +259,7 @@ export default function AccountHeaderActions() {
         <LayoutDashboard size={18} />
       </Link>
 
-      <AccountProfileMenu
-        displayName={name}
-        email={email}
-      />
+      <AccountProfileMenu displayName={name} email={email} />
     </div>
   );
 }
