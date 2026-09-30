@@ -442,26 +442,43 @@ export async function GET(
           type: "ai_start",
         });
 
-        const aiResult = await streamBalancedSummary({
-          digest,
-          factualText: factualBalanced,
-          /*
-           * A resposta é validada por inteiro antes de se tornar visível.
-           * O streaming do provedor continua sendo consumido no servidor,
-           * mas tokens provisórios não são enviados para a interface.
-           */
-          onDelta: () => {},
-        });
+        /*
+         * A IA melhora a apresentação do resumo, mas não pode ser
+         * um ponto único de falha.
+         *
+         * factualBalanced já foi produzido exclusivamente a partir
+         * dos dados oficiais confirmados no digest.
+         */
+        let aiResult: Awaited<ReturnType<typeof streamBalancedSummary>> | null =
+          null;
 
-        const aiAccepted =
-          aiResult.ok &&
-          aiSummaryPassesGuard({
+        try {
+          aiResult = await streamBalancedSummary({
+            digest,
+            factualText: factualBalanced,
+            /*
+             * A resposta é validada por inteiro antes de se tornar visível.
+             * O streaming do provedor continua sendo consumido no servidor,
+             * mas tokens provisórios não são enviados para a interface.
+             */
+            onDelta: () => {},
+          });
+        } catch (error) {
+          console.error(
+            "[BRASIVO summary ai] Falha ao gerar síntese com IA.",
+            error,
+          );
+        }
+
+        const aiRejected =
+          aiResult?.ok === true &&
+          !aiSummaryPassesGuard({
             text: aiResult.text,
             digest,
           });
 
-        if (!aiAccepted) {
-          if (aiResult.ok) {
+        if (!aiResult || !aiResult.ok || aiRejected) {
+          if (aiRejected) {
             console.warn(
               "[BRASIVO summary guard] Resposta da IA rejeitada pela validação factual.",
               {
@@ -470,6 +487,10 @@ export async function GET(
             );
           }
 
+          /*
+           * Um resumo AI antigo ainda tem prioridade sobre o fallback
+           * determinístico, desde que continue permitido como stale.
+           */
           if (staleFallback?.summary) {
             send({
               type: "cache",
@@ -486,13 +507,48 @@ export async function GET(
               cached: true,
               mode: "ai",
             });
-          } else {
-            send({
-              type: "error",
-              message:
-                "Não foi possível concluir a síntese agora. Tente novamente em alguns instantes.",
-            });
+
+            close();
+            return;
           }
+
+          /*
+           * Sem cache antigo, entregamos a visão factual produzida
+           * diretamente do digest confirmado.
+           *
+           * Assim indisponibilidade, timeout, 429/5xx ou rejeição da IA
+           * não transformam dados oficiais válidos em erro visual.
+           */
+          const factualFallback = factualBalanced.trim();
+
+          if (factualFallback) {
+            send({
+              type: "status",
+              message:
+                "Exibindo uma visão factual com os dados oficiais confirmados.",
+            });
+
+            send({
+              type: "done",
+              summary: factualFallback,
+              generatedAt: new Date().toISOString(),
+              cached: false,
+              mode: "factual",
+            });
+
+            close();
+            return;
+          }
+
+          /*
+           * Só chegamos ao erro total se nem a IA, nem cache,
+           * nem dados factuais confirmados produzirem conteúdo.
+           */
+          send({
+            type: "error",
+            message:
+              "Não foi possível concluir a síntese agora. Tente novamente em alguns instantes.",
+          });
 
           close();
           return;
