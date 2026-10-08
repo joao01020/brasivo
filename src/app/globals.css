@@ -9752,3 +9752,385 @@ button.followed-expense-trend {
 }
 
 /* ===== END DASHBOARD FOLLOWED PAGER ===== */
+
+/* ===== BRASIVO PASSWORD RECOVERY V1 ===== */
+
+.auth-password-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -5px;
+  margin-bottom: 2px;
+}
+
+.auth-password-actions a {
+  color: rgba(119, 154, 145, 0.9);
+  font-size: 12px;
+  text-decoration: none;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.auth-password-actions a:hover {
+  color: #28e58e;
+}
+
+.auth-card-heading {
+  margin-bottom: 24px;
+}
+
+.auth-card-heading h2 {
+  margin: 0 0 8px;
+  color: #edf5f2;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.auth-card-heading p {
+  margin: 0;
+  color: #738680;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.auth-back-link {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 30px;
+  color: #71837e;
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.auth-back-link:hover {
+  color: #27e58d;
+}
+
+.auth-feedback {
+  margin: 2px 0 0;
+  padding: 11px 13px;
+  border-radius: 9px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.auth-feedback-error {
+  border: 1px solid rgba(255, 103, 103, 0.16);
+  background: rgba(115, 34, 34, 0.08);
+  color: #d89393;
+}
+
+.auth-primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 49px;
+  border: 0;
+  border-radius: 10px;
+  background: #20df83;
+  color: #021009;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 200ms ease,
+    background 180ms ease;
+}
+
+.auth-primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: #29e88c;
+  box-shadow: 0 10px 30px rgba(32, 223, 131, 0.13);
+}
+
+.auth-primary-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.auth-button-link {
+  margin-top: 22px;
+}
+
+.auth-secondary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 46px;
+  margin-top: 22px;
+  border: 1px solid rgba(100, 139, 129, 0.22);
+  border-radius: 10px;
+  background: rgba(5, 16, 19, 0.5);
+  color: #dce9e5;
+  font-size: 13px;
+  text-decoration: none;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease;
+}
+
+.auth-secondary-button:hover {
+  border-color: rgba(34, 225, 135, 0.3);
+  background: rgba(18, 49, 38, 0.28);
+  color: #2be38e;
+}
+
+.auth-bottom-text {
+  margin: 21px 0 0;
+  text-align: center;
+  color: #71817d;
+  font-size: 12px;
+}
+
+.auth-bottom-text a {
+  color: #27de89;
+  text-decoration: none;
+}
+
+.auth-recovery-success,
+.auth-recovery-error,
+.auth-recovery-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.auth-recovery-success-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(37, 229, 140, 0.25);
+  border-radius: 50%;
+  background: rgba(31, 207, 122, 0.08);
+  color: #2be18d;
+  font-size: 17px;
+}
+
+.auth-recovery-success h2,
+.auth-recovery-error h2,
+.auth-recovery-state h2 {
+  margin: 0 0 10px;
+  color: #edf5f2;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.auth-recovery-success p,
+.auth-recovery-error p,
+.auth-recovery-state p {
+  margin: 0;
+  color: #7a8d87;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.auth-recovery-success strong {
+  color: #b9cbc5;
+  font-weight: 500;
+}
+
+.auth-recovery-note {
+  margin-top: 14px !important;
+  color: #5d706a !important;
+}
+
+.auth-recovery-loader {
+  width: 28px;
+  height: 28px;
+  margin-bottom: 22px;
+  border: 2px solid rgba(65, 112, 98, 0.18);
+  border-top-color: #25df88;
+  border-radius: 50%;
+  animation: brasivoRecoverySpin 800ms linear infinite;
+}
+
+@keyframes brasivoRecoverySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-recovery-loader {
+    animation: none;
+  }
+}
+
+/* ===== END BRASIVO PASSWORD RECOVERY V1 ===== */
+
+/* ===== BRASIVO PASSWORD RECOVERY VISUAL FIX V2 ===== */
+
+.brasivo-recovery-success {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brasivo-recovery-success-icon {
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  margin-bottom: 20px;
+
+  border: 1px solid rgba(32, 217, 120, 0.28);
+  border-radius: 50%;
+
+  background: rgba(32, 217, 120, 0.08);
+
+  color: #72e8a5;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.brasivo-recovery-success h2 {
+  margin: 0 0 10px;
+
+  color: #edf3f5;
+
+  font-size: 27px;
+  font-weight: 500;
+}
+
+.brasivo-recovery-success p {
+  margin: 0;
+
+  color: #8a989f;
+
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.brasivo-recovery-success p strong {
+  color: #cbd6d2;
+  font-weight: 500;
+}
+
+.brasivo-recovery-success > span {
+  margin-top: 14px;
+
+  color: #66777e;
+
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.brasivo-recovery-return {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 47px;
+
+  margin-top: 24px;
+
+  border: 1px solid #223039;
+  border-radius: 10px;
+
+  background: #060c10;
+
+  color: #cdd8d4;
+
+  font-size: 13px;
+  text-decoration: none;
+
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.brasivo-recovery-return:hover {
+  transform: translateY(-1px);
+
+  border-color: rgba(32, 217, 120, 0.35);
+
+  background: rgba(32, 217, 120, 0.035);
+
+  color: #72e8a5;
+}
+
+/* ===== END BRASIVO PASSWORD RECOVERY VISUAL FIX V2 ===== */
+
+/* ===== BRASIVO RESET PASSWORD V3 ===== */
+
+.brasivo-recovery-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brasivo-recovery-state h2 {
+  margin: 0 0 9px;
+  color: #edf3f5;
+  font-size: 27px;
+  font-weight: 500;
+}
+
+.brasivo-recovery-state p {
+  margin: 0;
+  color: #81918a;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.brasivo-recovery-spinner {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 22px;
+
+  border: 2px solid rgba(80, 111, 102, 0.18);
+  border-top-color: #28df8a;
+  border-radius: 50%;
+
+  animation: brasivoPasswordRecoverySpin 800ms linear infinite;
+}
+
+.brasivo-recovery-warning {
+  display: grid;
+  place-items: center;
+
+  width: 42px;
+  height: 42px;
+
+  margin-bottom: 20px;
+
+  border: 1px solid rgba(214, 164, 75, 0.23);
+  border-radius: 50%;
+
+  background: rgba(214, 164, 75, 0.06);
+
+  color: #d3ad66;
+
+  font-size: 18px;
+}
+
+@keyframes brasivoPasswordRecoverySpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brasivo-recovery-spinner {
+    animation: none;
+  }
+}
+
+/* ===== END BRASIVO RESET PASSWORD V3 ===== */

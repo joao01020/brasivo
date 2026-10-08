@@ -26,7 +26,9 @@ export default function LoginPage() {
     });
 
     if (signInError) {
-      setError("E-mail ou senha inválidos, ou a conta ainda não foi confirmada.");
+      setError(
+        "E-mail ou senha inválidos, ou a conta ainda não foi confirmada.",
+      );
       setLoading(false);
       return;
     }
@@ -38,7 +40,11 @@ export default function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-visual">
-        <Link className="auth-brand" href="/"><span>BR</span><b>A</b><span>SIVO</span></Link>
+        <Link className="auth-brand" href="/">
+          <span>BR</span>
+          <b>A</b>
+          <span>SIVO</span>
+        </Link>
         <div className="auth-message">
           <small>ACESSO BRASIVO</small>
           <h1>Acompanhe com continuidade.</h1>
@@ -49,24 +55,44 @@ export default function LoginPage() {
 
       <section className="auth-form-side">
         <div className="auth-card">
-          <Link className="auth-back" href="/">← Voltar para o início</Link>
+          <Link className="auth-back" href="/">
+            ← Voltar para o início
+          </Link>
           <h2>Entrar</h2>
           <p>Entre na sua conta BRASIVO.</p>
           <form className="auth-form" onSubmit={handleSubmit}>
             {error && <div className="auth-error">{error}</div>}
             <div className="auth-field">
               <label htmlFor="email">E-mail</label>
-              <input id="email" name="email" type="email" autoComplete="email" required />
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+              />
             </div>
             <div className="auth-field">
               <label htmlFor="password">Senha</label>
-              <input id="password" name="password" type="password" autoComplete="current-password" minLength={8} required />
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                minLength={8}
+                required
+              />
+              <div className="auth-password-actions">
+                <Link href="/forgot-password">Esqueceu a senha?</Link>
+              </div>
             </div>
             <button className="auth-submit" disabled={loading}>
               {loading ? "Entrando…" : "Entrar"}
             </button>
           </form>
-          <div className="auth-switch">Ainda não tem conta? <Link href="/register">Cadastrar</Link></div>
+          <div className="auth-switch">
+            Ainda não tem conta? <Link href="/register">Cadastrar</Link>
+          </div>
         </div>
       </section>
     </main>
