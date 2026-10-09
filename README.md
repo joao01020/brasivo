@@ -1029,7 +1029,7 @@ Uma visão simplificada das páginas:
 Clone o repositório:
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone https://github.com/joao01020/brasivo
 ```
 
 Entre no projeto:
