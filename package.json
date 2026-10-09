@@ -21,14 +21,14 @@
     "@vinext/cloudflare": "^1.0.0-beta.10",
     "fflate": "^0.8.3",
     "lucide-react": "^1.48.0",
-    "next": "16.3.6",
+    "next": "16.4.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-server-dom-webpack": "^19.2.8",
     "vinext": "^1.0.0-beta.12"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "^1.60.2",
+    "@cloudflare/vite-plugin": "^1.63.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -42,7 +42,7 @@
     "tsx": "^4.23.15",
     "typescript": "^5",
     "vite": "^8.3.1",
-    "wrangler": "^4.141.0"
+    "wrangler": "^4.149.0"
   },
   "type": "module"
 }
