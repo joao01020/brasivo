@@ -15,6 +15,7 @@ import {
   Receipt,
   FileText,
   Info,
+  Landmark,
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -29,6 +30,7 @@ import "@/components/mandates/expense-restitution-v36.css";
 import type { MandateExpenseSummary } from "@/types/chamber";
 import MandateActivityPanel from "@/components/mandate/MandateActivityPanel";
 import MandateProjectsPanel from "@/components/mandate/MandateProjectsPanel";
+import MandatePatrimonyPanel from "@/components/mandate/MandatePatrimonyPanel";
 import MandateSummaryCard from "@/components/mandate/MandateSummaryCard";
 import MandateProfileInitialLoading from "@/components/mandate/MandateProfileInitialLoading";
 
@@ -62,20 +64,31 @@ export default function MandateProfile({ id }: { id: string }) {
   const [signed, setSigned] = useState(false);
   const [followCount, setFollowCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "activity" | "expenses" | "projects"
+    "activity" | "expenses" | "projects" | "patrimony"
   >(() =>
     searchParams.get("tab") === "expenses"
       ? "expenses"
       : searchParams.get("tab") === "projects"
         ? "projects"
-        : "activity",
+        : searchParams.get("tab") === "patrimony"
+          ? "patrimony"
+          : "activity",
   );
   const [expenseYear, setExpenseYear] = useState(new Date().getFullYear());
   const [expenses, setExpenses] = useState<MandateExpenseSummary | null>(null);
   const [expensesLoading, setExpensesLoading] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("tab") === "expenses") setActiveTab("expenses");
+    const tab = searchParams.get("tab");
+
+    if (
+      tab === "activity" ||
+      tab === "expenses" ||
+      tab === "projects" ||
+      tab === "patrimony"
+    ) {
+      setActiveTab(tab);
+    }
   }, [searchParams]);
 
   useEffect(() => {
@@ -419,12 +432,26 @@ export default function MandateProfile({ id }: { id: string }) {
                 <FileText size={14} />
                 Projetos e resultados
               </button>
+              <button
+                className={activeTab === "patrimony" ? "is-active" : ""}
+                onClick={() => setActiveTab("patrimony")}
+              >
+                <Landmark size={14} />
+                Patrimônio
+              </button>
             </div>
 
             {activeTab === "activity" ? (
               <MandateActivityPanel mandateId={id} />
             ) : activeTab === "projects" ? (
               <MandateProjectsPanel mandateId={id} />
+            ) : activeTab === "patrimony" ? (
+              <MandatePatrimonyPanel
+                mandateId={id}
+                name={mandate.name}
+                civilName={mandate.civilName}
+                state={mandate.state}
+              />
             ) : (
               <div className="mandate-expenses">
                 <div className="profile-section-heading expenses-heading">

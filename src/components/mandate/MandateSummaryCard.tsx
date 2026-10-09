@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Eye, Info } from "lucide-react";
+import { ExternalLink, Eye, Info, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import styles from "./MandateSummaryCard.module.css";
@@ -137,6 +137,9 @@ function parseSseChunk(buffer: string) {
 }
 
 export default function MandateSummaryCard({ mandateId }: Props) {
+  /* BRASIVO_SUMMARY_REFRESH_CLIENT_V2 */
+  const [refreshVersion, setRefreshVersion] = useState(0);
+
   const [summary, setSummary] = useState("");
 
   /*
@@ -234,7 +237,7 @@ export default function MandateSummaryCard({ mandateId }: Props) {
     async function run() {
       try {
         const response = await fetch(
-          `/api/mandates/${encodeURIComponent(String(mandateId))}/summary-stream`,
+          `/api/mandates/${encodeURIComponent(String(mandateId))}/summary-stream${refreshVersion > 0 ? "?refresh=1" : ""}`,
           {
             cache: "no-store",
             signal: controller.signal,
@@ -376,12 +379,33 @@ export default function MandateSummaryCard({ mandateId }: Props) {
         revealTimerRef.current = null;
       }
     };
-  }, [mandateId]);
+  }, [mandateId, refreshVersion]);
 
   const hasSummary = Boolean(summary.trim());
 
   return (
     <section className={styles.root} aria-label="Resumo do mandato">
+      <div className={styles.refreshActions}>
+        <button
+          type="button"
+          className={styles.refreshButton}
+          onClick={() => {
+            if (loading) return;
+            setRefreshVersion((value) => value + 1);
+          }}
+          disabled={loading}
+          aria-label="Atualizar resumo do mandato"
+          title="Atualizar resumo"
+        >
+          <RefreshCw
+            size={13}
+            className={
+              loading && refreshVersion > 0 ? styles.refreshIconSpin : undefined
+            }
+          />
+          {loading && refreshVersion > 0 ? "Atualizando…" : "Atualizar resumo"}
+        </button>
+      </div>
       <div className={styles.header}>
         <div className={styles.headingGroup}>
           <div className={styles.eyeBox} aria-hidden="true">

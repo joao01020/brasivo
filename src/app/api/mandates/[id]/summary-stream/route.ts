@@ -277,9 +277,18 @@ export async function GET(
           message: "Verificando se já existe uma versão preparada…",
         });
 
+        /* BRASIVO_SUMMARY_MANUAL_REFRESH_V2 */
+        const forceRefresh =
+          new URL(_request.url).searchParams.get("refresh") === "1";
+
         const cached = await readSummaryCache(mandateId);
 
-        if (cacheIsFresh(cached) && cached?.summary && cached.mode === "ai") {
+        if (
+          !forceRefresh &&
+          cacheIsFresh(cached) &&
+          cached?.summary &&
+          cached.mode === "ai"
+        ) {
           send({
             type: "cache",
             summary: cached.summary,

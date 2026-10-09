@@ -370,3 +370,90 @@
     flex-direction: column;
   }
 }
+
+/* ===== BRASIVO SUMMARY AUTO CACHE REFRESH V2 ===== */
+
+.root {
+  position: relative;
+}
+
+.refreshActions {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  z-index: 3;
+
+  display: flex;
+  justify-content: flex-end;
+}
+
+.refreshButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  min-height: 30px;
+  padding: 0 10px;
+
+  border: 1px solid rgba(42, 79, 82, 0.72);
+  border-radius: 8px;
+
+  background: rgba(6, 18, 20, 0.82);
+  color: rgba(169, 190, 184, 0.72);
+
+  font: inherit;
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    opacity 160ms ease;
+}
+
+.refreshButton:hover:not(:disabled) {
+  color: rgba(224, 235, 232, 0.94);
+  border-color: rgba(47, 224, 140, 0.34);
+  background: rgba(10, 28, 27, 0.94);
+}
+
+.refreshButton:focus-visible {
+  outline: 1px solid rgba(47, 224, 140, 0.46);
+  outline-offset: 2px;
+}
+
+.refreshButton:disabled {
+  cursor: default;
+  opacity: 0.34;
+}
+
+.refreshIconSpin {
+  animation: brasivoSummaryRefreshSpin 800ms linear infinite;
+}
+
+@keyframes brasivoSummaryRefreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .refreshActions {
+    position: static;
+    margin: 0 0 12px;
+    padding: 14px 14px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .refreshIconSpin {
+    animation: none;
+  }
+}
+
+/* ===== END BRASIVO SUMMARY AUTO CACHE REFRESH V2 ===== */
