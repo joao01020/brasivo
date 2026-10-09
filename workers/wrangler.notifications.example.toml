@@ -1,0 +1,10 @@
+name = "brasivo-mandate-notifications"
+main = "mandate-notification-cron.ts"
+compatibility_date = "2026-09-26"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+BRASIVO_SYNC_URL = "https://SEU-DOMINIO/api/internal/mandate-sync"
+# configure CRON_SECRET com: npx wrangler secret put CRON_SECRET

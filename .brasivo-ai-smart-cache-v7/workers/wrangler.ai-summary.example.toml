@@ -1,0 +1,12 @@
+name = "brasivo-ai-summary-cron"
+main = "mandate-ai-summary-cron.ts"
+compatibility_date = "2026-09-26"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+BRASIVO_BASE_URL = "https://SEU-DOMINIO-BRASIVO"
+
+# Configure sem salvar o segredo no arquivo:
+# wrangler secret put CRON_SECRET

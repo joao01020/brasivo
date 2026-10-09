@@ -1,0 +1,65 @@
+import { enforceApiRateLimit } from "@/lib/security/api-rate-limit";
+import { NextRequest, NextResponse } from "next/server";
+import { getRepresentatives } from "@/lib/api/chamber";
+import type { Representative } from "@/types/chamber";
+
+export const dynamic = "force-dynamic";
+
+export async function GET(request: NextRequest) {
+  /* BRASIVO_API_RATE_LIMIT_V2:GET:representatives */
+  const brasivoRateLimit = await enforceApiRateLimit(
+    request,
+    "PUBLIC_LIGHT",
+    "representatives",
+  );
+  if (brasivoRateLimit) return brasivoRateLimit;
+
+  try {
+    const state = request.nextUrl.searchParams.get("state")?.toUpperCase();
+    const query = request.nextUrl.searchParams
+      .get("query")
+      ?.trim()
+      .toLocaleLowerCase("pt-BR");
+
+    let representatives = await getRepresentatives();
+
+    if (state) {
+      representatives = representatives.filter(
+        (representative) => representative.siglaUf === state,
+      );
+    }
+
+    if (query) {
+      representatives = representatives.filter((representative) =>
+        `${representative.nome} ${representative.siglaPartido} ${representative.siglaUf}`
+          .toLocaleLowerCase("pt-BR")
+          .includes(query),
+      );
+    }
+
+    const normalized: Representative[] = representatives.map((representative) => ({
+      id: representative.id,
+      name: representative.nome,
+      party: representative.siglaPartido,
+      state: representative.siglaUf,
+      photoUrl: representative.urlFoto,
+      sourceUrl: representative.uri,
+    }));
+
+    return NextResponse.json({
+      source: "Câmara dos Deputados — Dados Abertos",
+      total: normalized.length,
+      representatives: normalized,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not query the official source.",
+      },
+      { status: 502 },
+    );
+  }
+}

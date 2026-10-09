@@ -1,0 +1,107 @@
+.expense-recent-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+}
+
+/* ===== BRASIVO EXPENSE SHOW MORE BUTTON V2 ===== */
+
+.expense-recent-more-button {
+  width: 100%;
+  min-height: 40px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  margin-top: 18px;
+  padding: 0 16px;
+
+  border: 1px solid rgba(39, 73, 80, 0.86);
+  border-radius: 10px;
+
+  background: linear-gradient(
+    180deg,
+    rgba(7, 20, 23, 0.82),
+    rgba(5, 16, 19, 0.82)
+  );
+
+  color: rgba(171, 191, 187, 0.72);
+
+  font: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.expense-recent-more-button::after {
+  content: "";
+
+  width: 6px;
+  height: 6px;
+
+  margin-top: -3px;
+
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+
+  transform: rotate(45deg);
+  opacity: 0.9;
+
+  transition:
+    transform 180ms ease,
+    margin-top 180ms ease;
+}
+
+.expense-recent-more-button:hover {
+  border-color: rgba(48, 99, 106, 0.98);
+
+  background: linear-gradient(
+    180deg,
+    rgba(8, 25, 28, 0.93),
+    rgba(5, 18, 21, 0.93)
+  );
+
+  color: rgba(212, 226, 223, 0.9);
+}
+
+.expense-recent-more-button:active {
+  transform: translateY(1px);
+}
+
+.expense-recent-more-button:focus-visible {
+  outline: 1px solid rgba(47, 224, 140, 0.46);
+  outline-offset: 2px;
+}
+
+.expense-recent-more-button[aria-expanded="true"]::after {
+  margin-top: 3px;
+  transform: rotate(225deg);
+}
+
+@media (max-width: 640px) {
+  .expense-recent-more-button {
+    min-height: 42px;
+    margin-top: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .expense-recent-more-button,
+  .expense-recent-more-button::after {
+    transition: none;
+  }
+}
+
+/* ===== END BRASIVO EXPENSE SHOW MORE BUTTON V2 ===== */

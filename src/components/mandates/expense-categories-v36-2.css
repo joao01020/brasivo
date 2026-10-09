@@ -1,0 +1,33 @@
+
+.expense-category-actions {
+  display: flex;
+  justify-content: center;
+  padding-top: 14px;
+}
+
+.expense-show-more {
+  appearance: none;
+  border: 1px solid rgba(72, 205, 132, 0.22);
+  background: rgba(72, 205, 132, 0.055);
+  color: inherit;
+  min-width: 124px;
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.expense-show-more:hover {
+  background: rgba(72, 205, 132, 0.095);
+  border-color: rgba(72, 205, 132, 0.34);
+}
+
+.expense-show-more:active {
+  transform: translateY(1px);
+}

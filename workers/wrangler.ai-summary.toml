@@ -1,0 +1,13 @@
+name = "brasivo-ai-summary-cron"
+main = "mandate-ai-summary-cron.ts"
+compatibility_date = "2026-09-26"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[[services]]
+binding = "BRASIVO_APP"
+service = "web"
+
+# Configure sem salvar o segredo no arquivo:
+# wrangler secret put CRON_SECRET
