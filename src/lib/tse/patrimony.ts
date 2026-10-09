@@ -554,8 +554,8 @@ export async function getMandatePatrimony(params: {
       phase:
         firstTerm.firstElectionYear !== null &&
         point.year <= firstTerm.firstElectionYear
-          ? "before-taking-office"
-          : "after-taking-office",
+          ? ("before-taking-office" as const)
+          : ("after-taking-office" as const),
     }))
     .sort((a, b) => a.year - b.year);
 
